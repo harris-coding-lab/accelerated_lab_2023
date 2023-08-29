@@ -1,0 +1,89 @@
+---
+title: 'TA Session 3: Intro to Normal Distribution'
+author: "Harris Coding Camp -- Standard Track"
+date: "Summer 2023"
+output:
+  beamer_presentation:
+    fig_width: 6
+    fig_height: 4
+    includes:
+      in_header: /Users/sheng-hao/Dropbox/uchicago/AIP 3rd Year/Coding Camp/Lecture
+        Notes/Lecture 1/header_page_n.tex
+---
+```{r, echo=FALSE, include=FALSE}
+library(tidyverse)
+#library(readxl)
+library(readr)
+options(dplyr.summarise.inform = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", highlight = TRUE, fig.align="center")
+#knitr::opts_chunk$set(echo = TRUE, fig.align="center")
+#housing_data <- read_csv("texas_housing_data.csv")
+```
+
+## Normal Distribution
+
+  ![](/Users/sheng-hao/Dropbox/uchicago/AIP 2nd Year/Coding Camp/Lecture
+        Notes/Lecture 6/images/6_3.png)
+
+  - Most commonly used distribution; bell-curved shape
+  - Important parameters: **mean & standard deviation**
+    - Mean indicates where data points are centered
+    - Standard deviation measures how data points are spread out
+
+## Normal Distribution
+
+  ![](/Users/sheng-hao/Dropbox/uchicago/AIP 2nd Year/Coding Camp/Lecture
+        Notes/Lecture 6/images/6_4.png)
+
+**Mean** is the average of a set of values. It also indicates where data points are centered.
+
+## Normal Distribution
+
+  ![](/Users/sheng-hao/Dropbox/uchicago/AIP 2nd Year/Coding Camp/Lecture
+        Notes/Lecture 6/images/6_5.png)
+
+**Variance** is a measure of how far a set of data are spread out from their mean value
+
+  - **Standard deviation** is the sqrt of variance
+  
+## Normal Distribution and `rnorm()`
+\footnotesize
+At times, we feel the need to generate numbers at random to test certain hypothesis in statistics. Usually, we consider generating random numbers that follow a normal distribution using `rnorm()` function:
+
+```{r, eval = FALSE}
+rnorm(num, mean, sd)
+```
+
+  - `num`: number of values that needs to be generated
+  - `mean`: mean value of the normal distribution. Its default value is 0.
+  - `sd`: sd of the normal distribution. Its default value is 1.
+  
+```{r, eval = TRUE}
+data <- rnorm(10)
+data
+```
+
+## Normal Distribution and `rnorm()`
+\footnotesize
+Occationally, we consider generating random numbers that follow a normal distribution with specific mean and sd:
+```{r, eval = TRUE}
+data_1 <- rnorm(1000, 5, 2)
+mean(data_1)
+sd(data_1)
+```
+
+## Normal Distribution and `rnorm()`
+\footnotesize
+We can do simple simulation by generate 1000 random numbers using `rnorm()` and create a histogram based on that distribution:
+```{r, eval = TRUE}
+data <- rnorm(1000, 0, 1)
+hist(data, main = "Normal distribution with mean = 0, sd = 1")
+```
+
+## Normal Distribution and `rnorm()`
+\footnotesize
+We can do simple simulation by generate 1000 random numbers using `rnorm()` and create a histogram based on that distribution:
+```{r, eval = TRUE}
+data <- rnorm(1000, 0, 10)
+hist(data, main = "Normal distribution with mean = 0, sd = 10")
+```
