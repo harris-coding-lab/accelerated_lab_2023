@@ -1,0 +1,352 @@
+---
+title: "Solution Accelerated TA session 4: base R with vectors and data frames"
+author: "Ari Anisfeld"
+date: "2022-08-27"
+output: pdf_document
+urlcolor: blue
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+midwest_data <- midwest
+```
+
+# General Guidelines
+
+You may encounter some functions we did not cover in the lectures. This will give you some practice on how to use a new function for the first time. You can try following steps:
+
+1. Start by typing `?new_function` in your Console to open up the help page
+2. Read the help page of this `new_function`. The description might be a bit technical for now. That’s OK. Pay attention to the Usage and Arguments, especially the argument `x` or `x,y` (when two arguments are required)
+3. At the bottom of the help page, there are a few examples. Run the first few lines to see how it works
+4. Apply it in your questions
+
+**It is highly likely that you will encounter error messages while doing this exercise. Here are a few steps that might help get you through it:**
+
+1. Locate which line is causing this error first
+2. Check if you have a typo in the code. Sometimes your group members can spot a typo faster than you.
+3. If you enter the code without any typo, try googling the error message. Scroll through the top few links see if any of them helps
+4. Try working on the next few questions while waiting for help by TAs
+
+# Using `[` and other base R tools for data analysis.
+
+## Warm-up
+
+We’ll use midwestern demographic data which is at this [link](https://github.com/harris-coding-lab/harris-coding-lab.github.io/raw/master/data/midwest.dta). The dataset includes county level data for a single year. We call data this type of data “cross-sectional” since it gives a point-in-time cross-section of the counties of the midwest.
+
+```{r}
+# SOLUTION
+midwest_data <- haven::read_dta("../Data/midwest.dta")
+nrow(midwest_data)
+ncol(midwest_data)
+names(midwest_data)
+```
+
+
+1. What format^[i.e. is it a csv, dta, xlsx?] is the midwest data in? What function do you need to load it?
+2. Load the package so you can read in the data and assign it to the name `midwest_data`. If you don't remember what package contains that function use `??`  (as in `??read_xxx`) 
+
+    `??` is a way to search through help for functions that are not currently loaded in R or if you forgot the exact name of a function.
+    
+3. How many rows and columns does the data have? 
+4. Notice that row represents a county which is uniquely identified by a `PID` or using `county` + `state`.
+5. Use `names()` to see the names of all the columns. 
+
+
+# Using `[` and `$` with vectors.
+
+Recall that columns are vectors and you can extract the vector using `$`.
+
+1. Extract the `inmetro` and calculate the mean. 
+    
+    ```{r, include = TRUE}
+    # SOLUTION
+    mean(midwest_data$inmetro)
+    ```
+    
+    We might interpret the result as the proportion of counties that are urban ... but the data did not come with a codebook, so we are not sure! Let's explore.
+
+1. Run the following code and explain in words what the two results are. Assign the two resulting vectors to names that reflect what they are.
+    
+    ```{r, eval = FALSE}
+    midwest_data$poptotal[midwest_data$inmetro == 1] 
+    midwest_data$poptotal[midwest_data$inmetro == 0]
+    ```
+
+
+1. What is the average (mean) population for urban midwest counties? How about non-urban counties? Do these numbers make sense?
+1. What are the `max()` and `min()` for these vectors? Do these numbers make sense?
+1. How many "urban counties" have fewer than 50000 residents. What proportion of the counties is this?
+
+
+```{r, include = TRUE}
+# SOLUTIONS
+urban_pop <- midwest_data$poptotal[midwest_data$inmetro == 1] 
+rural_pop <- midwest_data$poptotal[midwest_data$inmetro == 0]
+
+mean(urban_pop)
+mean(rural_pop)
+
+min(urban_pop)
+max(urban_pop)
+
+min(rural_pop)
+max(rural_pop)
+
+
+length(urban_pop[urban_pop < 50000])
+length(urban_pop[urban_pop < 50000])/length(urban_pop)
+
+# this is a bit more sophisticated
+sum(urban_pop < 50000)
+mean(urban_pop < 5000)
+
+```
+
+1. You can use `sort()` to see the numbers in order. Try it out--the first 5 numbers should be:
+    
+    ```{r, echo = TRUE}
+    # SOLUTION
+    # 10th smallest
+    sort(midwest_data$poptotal[midwest_data$inmetro == 1] )[10]
+    # 10th largest
+    sort(midwest_data$poptotal[midwest_data$inmetro == 1], decreasing = TRUE )[10]
+    ```
+1. What is the population of the 10th smallest urban county in the midwest? How about the 10th largest? (Hint: Use `?sort` to learn how to change the order of your sort.)
+
+1. What are the name of the 4 urban counties with population under 20000? (You can use `&` to combine conditional expressions.)
+1. What are the PID of the 4 urban counties with population under 20000?
+
+```{r, include=TRUE}
+# SOLUTION
+midwest_data$county[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1]
+midwest_data$PID[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1]
+# we could also use double indexing as we discuss below.
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, "PID"]
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, "state"]
+```
+1. What states are those counties in?
+
+# Bring this back to data.
+
+When analyzing the vectors above, we soon want to have access to related information. We want data frames!
+
+We can get the county and state, PID and all other associated information by filtering our rows of interest like so:
+
+```{r}
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, ]
+```
+1. Adjust the code above so we get the same rows, but only see the columns county, state, poptotal, popdensity and inmetro.
+
+```{r, include = TRUE}
+# SOLUTION
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, c("county", "state", "poptotal", "popdensity", "inmetro")]
+```
+
+1. These are the low population counties where `inmetro` is 1.  Are their population densities low? Compare them to the population densities of similar population counties where `inmetro` is `0`. If you have time, you can look at the locations on a map and get a better understanding of what `inmetro` captures.
+
+```{r, include = TRUE}
+# SOLUTION
+# the popdensity are similar for these regions, though the inmetro == 1 counties 
+# are slightly bigger
+midwest_data[midwest_data$inmetro == 0 & midwest_data$poptotal < 20000, ]
+
+midwest_data[midwest_data$inmetro == 0,  "popdensity"]
+```
+
+
+  **Notice on google maps, we see the in metro counties are near big cities like Cincinnati. So in metro might be defined by being within a "metropolitan statistical area" which is an official Census designation that implies some relationship between counties--though not necessarily urbanity it seems! If we want to really work with the data distinguishing an urban / rural divide, we may need a better definition of "urban"!** 
+  
+**Rapid fire:** 
+
+Using `[` and `$` complete the following challenges:
+
+1. What states have an Adams County?
+1. How many counties are in Indiana?
+1. What county has the highest percent Asian in this data? 
+1. Make a data frame that includes the 10 largest counties (by total population) and shows the county, state, total population, and percent with college degree. Assign the output to the name `top_ten`.
+
+
+```{r, include = TRUE}
+# Solutions
+midwest_data[midwest_data$county == "ADAMS", ]
+nrow(midwest_data[midwest_data$state == "IN", ])
+midwest_data[midwest_data$percasian == max(midwest_data$percasian), ]
+
+tenth_largest <- sort(midwest_data$poptotal, decreasing = TRUE)[10]
+top_ten <- midwest_data[midwest_data$poptotal >= tenth_largest, c("county", "state", "poptotal", "percollege") ]
+
+```
+
+## Ordering columns
+
+It would be nice to sort the table with the 10 largest counties by population. How do we do that?
+
+Let's start with a simpler example -- this is a good way to get intuition for what the code does! 
+
+
+1. Create the following test data set. Your random numbers will be different!
+
+    ```{r}
+    test_data <- tibble(
+      id = c(1, 4, 2, 3, 5),
+      gpa = 4 * runif(5)
+    )
+    
+    test_data
+    ```
+
+1. Explain what the following code does.
+
+    ```{r}
+    test_data[c(1, 2),]
+    test_data[c(2, 1),]
+    ```
+    Did you notice that the order of the rows changed! This suggests that we could re-order or sort the data frame, if we knew the correct **order** of the rows.
+    
+1. Pull out the rows that correspond to ids 1, 2, 3.  (e.g. the **3**rd row corresponds to `id` number 2). To make a data frame like this:
+
+    ```{r, echo = TRUE}
+    # Solution
+    test_data[c(1,3,4), ] 
+    ```
+1. base R has a function called `order()` which tells you the order of the rows (in increasing order). Use `order()` on the test_data ids. Plug this into your `[` to sort the data.
+
+    ```{r, echo = TRUE}
+    # Solution
+    test_data[order(test_data$id), ] 
+    ```
+
+1. Now sort `top_ten` in **decreasing** order. The expected output is:
+
+    ```{r, echo = TRUE}
+    # Solution
+    top_ten[order(top_ten$poptotal, decreasing = TRUE), ] 
+    ```
+
+## II. Investigate the `diamonds` dataset
+
+Throughout this exercise, we will be working with the `diamonds` dataset (comes with `tidyverse`), which contains the prices and other attributes of almost 54,000 diamonds. (use `?diamonds` to see the codebook.)
+
+1. Run the following command to familiarize ourselves with this dataset. How many observations and variables are included in `diamonds`? 
+
+    **SOLUTION: 53,940 observations (rows) and 10 variables (columns)**
+    
+```{r, eval = FALSE}
+# tidyverse
+glimpse(diamonds)
+# base R (utils)
+str(diamonds)
+```
+
+2. Try to describe the shape and center of the `price` distribution by observing the summary statistics like the mean, median and quartiles.
+
+  **SOLUTION: We see that the mean is much larger than the median, which suggests there are some very expensive diamonds in the right tail of the distribution.**
+
+```{r, eval = FALSE}
+summary(diamonds$price)
+```
+
+3. How many diamonds cost less than \$500? less than \$250? How many diamonds cost \$15000 or more?
+
+    **Solution: from the summary, we see there are no diamonds less than \$250. It's also clear that <\$500 and >\$15000 are a small portion of the data as both values are close to the extremes and outside of the middle 50 percent of the data (aka the interquartile range). Specifcally:**
+    
+```{r}
+nrow(diamonds[diamonds$price < 500, ])    
+nrow(diamonds[diamonds$price > 15000, ])    
+
+```
+    
+4. Which cut has the highest priced diamond? What is the price?
+
+```{r}
+# bracket and dollar sign solution 
+
+# you could just type strings, but I'm too lazy for that.
+# unique() is a useful function!
+cut_names <- unique(diamonds$cut)
+
+max_prices <- c(max(diamonds$price[diamonds$cut == cut_names[1]]),
+                max(diamonds$price[diamonds$cut == cut_names[2]]),
+                max(diamonds$price[diamonds$cut == cut_names[3]]),
+                max(diamonds$price[diamonds$cut == cut_names[4]]),
+                max(diamonds$price[diamonds$cut == cut_names[5]]))
+
+max_data <- data.frame(cut_names = cut_names, max_prices = max_prices)
+max_data[max_prices == max(max_prices),]
+
+
+diamonds %>%
+  group_by(cut) %>%
+  summarize(max_price = max(price)) %>%
+  filter(max_price == max(max_price))
+```
+
+
+5. Redo part 4 with the lowest priced diamond.
+
+```{r}
+diamonds %>%
+  group_by(cut) %>%
+  summarize(min_price = min(price)) %>%
+  filter(min_price == min(min_price))
+```
+
+6. Is there any relationship between `price` and `carat` of a diamond? What might explain that pattern? Run the code below and comment on the result.
+
+  **Solution: It appears that there is a linear relationship between log-price and log-carat.**
+
+```{r, eval=TRUE, echo=TRUE}
+plot(log(price) ~ log(carat), # plot log(price) by log(carat)
+     type = "p", # plot type "p" (points)
+     data = diamonds, # data from diamonds
+     ylab = "log price", # add y-axis label
+     xlab = "log carat", # add x-axis label
+     main = "Price vs Carat" # add title
+    )
+```
+
+7. What does the graph look like if we don't take logs? Is the relationship still linear?
+
+**Solution: When we remove the logs, the relationship is no longer linear. We seea large increase in price that is quite dispersed once the diamond is over 1 carat. We also notice bunching around round numbers of carats**
+
+
+```{r, eval=TRUE, echo=TRUE}
+plot(price ~ carat, # plot log(price) by log(carat)
+     type = "p", # plot type "p" (points)
+     data = diamonds, # data from diamonds
+     ylab = "price", # add y-axis label
+     xlab = "carat", # add x-axis label
+     main = "Price vs Carat" # add title
+    )
+```
+
+
+
+8. Redo part 6, separately for observations of each `cut`. Is there any relationship between price and cut quality of a diamond?
+
+```{r, eval=TRUE, echo=TRUE}
+ggplot(diamonds) + 
+  geom_point(aes(x = log(carat), y = log(price)), 
+                color = "lightblue") + 
+  labs(title = "Diamonds Price by Cut") + 
+  facet_grid(. ~ cut) +
+  theme_minimal()
+```
+
+**Solution: It appears as if the relationship between log(price) and log(carat) is very stable across the different cuts. It's linear and takes on the same range of values from what we can see.**
+
+9. It looks like the relationship is stable across cuts. But there are so many diamonds, it's difficult to see if there's any important relationship. Is there any relationship between `price` per `carat` (defined as `price` divided by `carat`) and `cut` of a diamond? Run the code below, and compare the result with the one from part 8.
+
+```{r, eval=TRUE, echo=TRUE}
+ggplot(diamonds) + 
+  geom_histogram(aes(x=price/carat), binwidth = 0.05,
+                 color = "black", fill = "lightblue") +
+  labs(title = "Histogram of Price per Carat, facet by Cut.") + 
+  scale_x_log10() +
+  facet_grid(. ~ cut)
+```
+
+**Data visualization** is the practice of translating information into a visual context (e.g. map, graph, or plot) to make data easier for us to understand and pull insights from. The main goal of data visualization is to make it easier to identify patterns and trends, especially in large data sets. We will learn how to make different plots through base R and tidyverse in Lectures week 3. Stay tuned! 
+    
