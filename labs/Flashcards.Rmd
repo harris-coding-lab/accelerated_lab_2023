@@ -1,0 +1,129 @@
+---
+title: "Flash Cards"
+author: "Harris Coding Camp"
+date: "Summer 2023"
+output:
+  beamer_presentation:
+    fig_width: 6
+    fig_height: 4
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Name three functions for loading data into R.
+
+## Name three functions for loading data into R.
+
+```{r, eval= FALSE}
+readr::read_csv()  # preferred over base::read.csv()
+haven::read_dta()
+readxl::read_xlsx()
+```
+
+You'll learn about more depending on your needs.
+
+
+# How do you test if a value is *not* missing?
+
+##  How do you test if a value is *not* missing?
+
+```{r}
+!is.na(c(1, NA, 100))
+```
+
+
+
+# Take a vector `c('anisfeld', 'mkr')`. What function let's you add `'@uchicago.edu'` to each item?
+
+## What function do you use to add `'@uchicago.edu'` to each item?
+
+`paste0()` or `str_c()` 
+
+```{r}
+cnet <- c('anisfeld', 'mkr')
+
+paste0(cnet, "@uchicago.edu")
+# tidyverse function in package stringr
+str_c(cnet, "@uchicago.edu")
+```
+
+# What does this code return? `max(c(100, -10, NA))` 
+
+## What does this code return? `max(c(100, -10, NA))` 
+
+```{r}
+max(c(100, -10, NA))
+
+# if it's safe to ignore NA
+max(c(100, -10, NA), na.rm=FALSE)
+```
+
+
+
+# Gotchas
+
+
+
+## Your friend gets the following error. What's the culprit? 
+
+
+```{r, eval = FALSE}
+read_dta("my_file.dta")
+```
+Error in read_dta("my_file.dta") : could not find function "read_dta"
+
+## What's the culprit? 
+
+
+They need to load the `haven` package
+
+```{r, eval = FALSE}
+library(haven)
+read_dta("my_file.dta")
+
+# or use double colons
+haven::read_dta("my_file.dta")
+```
+
+
+
+## Your friend gets the following error. What's the culprit? 
+
+
+```{r, eval = FALSE}
+read_xlsx("data/my_file.xlsx")
+```
+Error: `path` does not exist: ‘data/my_file.dta’
+
+
+## What's the culprit? 
+
+
+1. There's a typo in the file name.
+2. The file or folder is not in the working directory.
+
+
+## Your friend gets the following error. What's the culprit? 
+
+```{r, eval = FALSE}
+install.packages(bench)
+```
+Error in install.packages : object 'bench' not found
+
+
+##  What's the culprit? 
+
+The packages need to be a *character* vector of the names of packages (i.e. in quotes)
+
+```{r, eval = FALSE}
+install.packages("bench")
+```
+
+
+When they use `bench` without quotes, R looks for it in the global environment! 
+
+
