@@ -454,3 +454,185 @@ midwest %>%
 SOLUTION:
 
 `geom_bar` does a statistical transformation where it calculates the number of rows per group (`x` value) and makes that the height of the bar. This is the same as using `count` on the data and then using `geom_col`.  By default, `geom_bar()` has `stat = "count"` where `stat` is an argument that tells `geom_bar()` what kind of statistical transformation to do. We can get the `geom_col` behavior with `geom_bar(stat = "identity")`, `stat = "identity"` means we just take the `y` value from `n` directly. 
+
+
+\newpage
+
+# III. Global Attacks Against Aid-Workers
+
+In this part of the exercise (revised from previous Stats I HW), we will examine trends over time in the number of attacks and incidents involving aid-workers. There is a large literature discussing whether providing aid to low and middle income countries also creates incentives for armed groups to use violence in order to appropriate the distributed aid.\footnote{For more details, read the introduction and background sections of Crost, Benjamin, Joseph Felter, and Patrick Johnston. 2014. ``Aid Under Fire: Development Projects and Civil Conflict.'' \emph{American Economic Review} 104 (6): 1833-56.} We will not be trying to answer that question or to quantify the relationship between the amount of aid and violence against aid-workers. Our goal here is a simple description of an annual time-series of data spanning 1997 to 2020. We obtained the data from https://aidworkersecurity.org/ and have simplified it for the purposes of this exercise.\footnote{We simply downloaded the entire data set and aggregated over all counties and types of incidents.} 
+
+The \texttt{aid\_workers\_security\_incidents\_annual\_level\_1997\_2020.csv} data set contains the following variables:
+
+  \begin{tabular}{lp{0.65\textwidth}}
+    Name & Description\\
+    \hline
+    \texttt{year} & Calendar year \\
+    \texttt{number\_incidents} & The total number of recorded incidents in that year \\
+    \texttt{total\_affected} & The total number of people affected across all incidents in that year \\
+    \hline
+  \end{tabular}
+
+\medskip
+
+**1. Read the data set into R.**
+
+```{r include=FALSE}
+data_attacks <- read.csv("https://raw.githubusercontent.com/ArthurCheib/teaching-experience/main/aid_workers_security_incidents_annual_level_1997_2020.csv")
+```
+
+SOLUTION:
+
+```{r eval=FALSE}
+data_attacks <- read.csv("aid_workers_security_incidents_annual_level_1997_2020.csv")
+
+data_attacks <- data_attacks |>
+  mutate(affected_per_incident = total_affected/number_incidents,
+         post2008 = ifelse(year >= 2008, 1, 0))
+```
+
+2. Create a new variable with the number of affected people per-incident.
+
+*See above*
+
+3. Create a new variable that is equal to 1 for any year after 2007 and 0 otherwise (that variable should equal to 0 during 1997 to 2007, and equal to 1 during 2008 to 2020).
+
+*See above*
+
+4. What is the mean value of the total number of affected people during the 1997 to 2007 period? What is that number for the 2008 to 2020 period?
+
+SOLUTION:
+
+```{r}
+# without group_by
+data_attacks |>
+  filter(post2008 == 1) |>
+  summarize(mean_affected_post2008 = mean(total_affected))
+
+
+data_attacks |>
+  filter(post2008 == 0) |>
+  summarize(mean_affected_pre2008 = mean(total_affected))
+
+
+# with group_by
+data_attacks |>
+  group_by(post2008) |> 
+  summarize(mean_affected = mean(total_affected))
+```
+
+**5. Next, you should use the `plot` command to produce three different graphs. We will start with a graph for the number of incidents (y-axis) in each year (x-axis). Make sure that the axes are labeled and that your plot has an appropriate title.**
+
+SOLUTION:
+
+```{r}
+data_attacks |>
+  ggplot(aes(x = year, y = number_incidents)) +
+    geom_line(color = "forestgreen") + 
+    geom_point(color = "forestgreen") + 
+  scale_x_continuous(breaks = seq(1997, 2018, by = 3)) +
+  labs(x = "Year", y = "Number of Incidents", 
+     title = "Over-Time Trends in Attacks Against Aid-Workers",) +
+  theme_minimal()
+
+# you can save a plot using ggsave() and add it to your homework document
+ggsave("hw1_incidents.pdf", width = 6, height=5)
+
+data_attacks |>
+  ggplot(aes(x = year, y = total_affected)) +
+    geom_line(color = "forestgreen") + 
+    geom_point(color = "forestgreen") + 
+  scale_x_continuous(breaks = seq(1997, 2018, by = 3)) +
+  labs(x = "Year", y = "Total affected", 
+     title = "Over-Time Trends in Attacks Against Aid-Workers",) +
+  theme_minimal()
+
+data_attacks |>
+  ggplot(aes(x = year, y = affected_per_incident)) +
+    geom_line(color = "forestgreen") + 
+    geom_point(color = "forestgreen") + 
+  scale_x_continuous(breaks = seq(1997, 2018, by = 3)) +
+  labs(x = "Year", y = "Affected per incident", 
+     title = "Over-Time Trends in Attacks Against Aid-Workers",) +
+  theme_minimal()
+
+```
+
+**7. In 1-2 sentences, briefly describe the over-time patterns in the first two graphs you produced (the number of incidents and the total number of affected people).**
+
+SOLUTION:
+
+(1) Graph of number of incidents:
+
+- Trending Upwards: There is a general increase in the number of incidents over the years. This indicates a growing concern that might need to be addressed.
+
+- Three Peaks: The presence of three peaks suggests that there were specific times when the incidents shot up notably. It might be valuable to investigate what caused these spikes.
+
+- Sharpest Peak in the Middle: The second peak being the sharpest indicates that there was a sudden and significant rise in incidents in that particular year.
+
+(2) Graph of total number of affected people:
+
+- Similar Trend to Incidents: The fact that the trend in the number of affected people matches that of the incidents suggests a direct correlation between the two. As incidents rise, more people are affected. This implies that not only are incidents becoming more frequent, but they are also impacting more individuals.
+
+- Matching Peaks: Since the peaks in this graph match those in the first, it's evident that the severity of those peak incidents (in terms of people affected) was significant.
+
+
+**8. In 1-2 sentences, what is qualitatively different about the third graph you produced (the number of affected people per-incident each year)?**
+
+SOLUTION:
+
+- The number of affected people per-incident seems more stable over-time, and if anything, seems to be decreasing and not increasing like the two other graphs. This is mostly a result of normalizing one variable in levels by another variable that is also in levels. 
+
+
+# Plots in base R
+
+
+```{r}
+# number of incidents 
+pdf("hw1_incidents.pdf", width = 6, height=5)
+par(mar=c(4.1,4.1,2.1,1.1)) # change the margins
+par(las=1) # rotate the vertical axis labels
+plot(x = data_attacks$year, 
+     y = data_attacks$number_incidents, 
+     type = "b", xlab = "Year", ylab = "Number of Incidents", 
+     main = "Over-Time Trends in Attacks Against Aid-Workers", 
+     col = "forestgreen", lwd = 2, ylim = c(30,300), xlim = c(1997,2020), 
+     xaxt = "n")
+axis(1, at = seq(1997,2020,3))
+graphics.off()
+```
+
+**6. Now produce two additional graphs. One for the total number of affected people in each year, and one for the number of affected people per-incident in each year.**
+
+SOLUTION:
+
+```{r}
+# number of total affected people 
+pdf("hw1_total_affected.pdf",width = 6, height=5)
+par(mar=c(4.1,4.1,2.1,1.1)) # change the margins
+par(las=1) # rotate the vertical axis labels
+plot(x = data_attacks$year, 
+     y = data_attacks$total_affected, 
+     type = "b", xlab = "Year", ylab = "Total Number of Affected People", 
+     main = "Over-Time Trends in Attacks Against Aid-Workers", 
+     col = "forestgreen", lwd = 2, ylim = c(50,500), xlim = c(1997,2020), 
+     xaxt = "n")
+axis(1, at = seq(1997,2020,3))
+graphics.off()
+```
+
+
+```{r}
+# number of affected people per-incident 
+pdf("hw1_affected_per_incident.pdf",width = 6, height=5)
+par(mar=c(4.1,4.1,2.1,1.1)) # change the margins
+par(las=1) # rotate the vertical axis labels
+plot(x = data_attacks$year, 
+     y = data_attacks$affected_per_incident, 
+     type = "b", xlab = "Year", ylab = "Number of Affected People per-Incident", 
+     main = "Over-Time Trends in Attacks Against Aid-Workers", 
+     col = "forestgreen", lwd = 2, ylim = c(1.5,3.5), xlim = c(1997,2020), 
+     xaxt = "n")
+axis(1, at = seq(1997,2020,3))
+graphics.off()
+```

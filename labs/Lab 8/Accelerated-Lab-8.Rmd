@@ -275,3 +275,33 @@ For the following, write code to reproduce each plot using `midwest`
     ggplot(aes(x = state, color = state)) +
     geom_bar()
 ```
+
+
+# III. Global Attacks Against Aid-Workers
+
+In this part of the exercise (revised from previous Stats I HW), we will examine trends over time in the number of attacks and incidents involving aid-workers. There is a large literature discussing whether providing aid to low and middle income countries also creates incentives for armed groups to use violence in order to appropriate the distributed aid.\footnote{For more details, read the introduction and background sections of Crost, Benjamin, Joseph Felter, and Patrick Johnston. 2014. ``Aid Under Fire: Development Projects and Civil Conflict.'' \emph{American Economic Review} 104 (6): 1833-56.} We will not be trying to answer that question or to quantify the relationship between the amount of aid and violence against aid-workers. Our goal here is a simple description of an annual time-series of data spanning 1997 to 2020. We obtained the data from https://aidworkersecurity.org/ and have simplified it for the purposes of this exercise.\footnote{We simply downloaded the entire data set and aggregated over all counties and types of incidents.} 
+
+The \texttt{aid\_workers\_security\_incidents\_annual\_level\_1997\_2020.csv} data set contains the following variables:
+
+Download it [here]("https://raw.githubusercontent.com/ArthurCheib/teaching-experience/main/aid_workers_security_incidents_annual_level_1997_2020.csv")
+
+
+  \begin{tabular}{lp{0.65\textwidth}}
+    Name & Description\\
+    \hline
+    \texttt{year} & Calendar year \\
+    \texttt{number\_incidents} & The total number of recorded incidents in that year \\
+    \texttt{total\_affected} & The total number of people affected across all incidents in that year \\
+    \hline
+  \end{tabular}
+
+\medskip
+
+1. Read the data set into R.
+2. Create a new variable with the number of affected people per-incident.
+3. Create a new variable that is equal to 1 for any year after 2007 and 0 otherwise (that variable should equal to 0 during 1997 to 2007, and equal to 1 during 2008 to 2020).
+4. What is the mean value of the total number of affected people during the 1997 to 2007 period? What is that number for the 2008 to 2020 period?
+5. Next, produce three different graphs. We will start with a graph for the number of incidents (y-axis) in each year (x-axis). Make sure that the axes are labeled and that your plot has an appropriate title.
+6. Now produce two additional graphs. One for the total number of affected people in each year, and one for the number of affected people per-incident in each year. 
+7. In 1-2 sentences, briefly describe the over-time patterns in the first two graphs you produced (the number of incidents and the total number of affected people).
+8. In 1-2 sentences, what is qualitatively different about the third graph you produced (the number of affected people per-incident each year)?
