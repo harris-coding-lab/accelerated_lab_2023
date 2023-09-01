@@ -1,0 +1,352 @@
+---
+title: "Lab 4 Solved: base R with vectors and data frames"
+author: "Harris Coding Camp"
+date: "Summer 2023"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+midwest_data <- midwest
+```
+
+# Using `[` and other base R tools for data analysis.
+
+## Warm-up
+
+We’ll use midwestern demographic data which is at this [link](https://github.com/harris-coding-lab/harris-coding-lab.github.io/raw/master/data/midwest.dta). The dataset includes county level data for a single year. We call data this type of data “cross-sectional” since it gives a point-in-time cross-section of the counties of the midwest.
+
+```{r}
+# SOLUTION
+midwest_data <- haven::read_dta("../Data/midwest.dta")
+nrow(midwest_data)
+ncol(midwest_data)
+names(midwest_data)
+```
+
+
+1. What format^[i.e. is it a csv, dta, xlsx?] is the midwest data in? What function do you need to load it?
+2. Load the package so you can read in the data and assign it to the name `midwest_data`. If you don't remember what package contains that function use `??`  (as in `??read_xxx`) 
+
+    `??` is a way to search through help for functions that are not currently loaded in R or if you forgot the exact name of a function.
+    
+3. How many rows and columns does the data have? 
+4. Notice that row represents a county which is uniquely identified by a `PID` or using `county` + `state`.
+5. Use `names()` to see the names of all the columns. 
+
+
+# Using `[` and `$` with vectors.
+
+Recall that columns are vectors and you can extract the vector using `$`.
+
+1. Extract the `inmetro` and calculate the mean. 
+    
+    ```{r, include = TRUE}
+    # SOLUTION
+    mean(midwest_data$inmetro)
+    ```
+    
+    We might interpret the result as the proportion of counties that are urban ... but the data did not come with a codebook, so we are not sure! Let's explore.
+
+1. Run the following code and explain in words what the two results are. Assign the two resulting vectors to names that reflect what they are.
+    
+    ```{r, eval = FALSE}
+    midwest_data$poptotal[midwest_data$inmetro == 1] 
+    midwest_data$poptotal[midwest_data$inmetro == 0]
+    ```
+
+
+1. What is the average (mean) population for urban midwest counties? How about non-urban counties? Do these numbers make sense?
+1. What are the `max()` and `min()` for these vectors? Do these numbers make sense?
+1. How many "urban counties" have fewer than 50000 residents. What proportion of the counties is this?
+
+
+```{r, include = TRUE}
+# SOLUTIONS
+urban_pop <- midwest_data$poptotal[midwest_data$inmetro == 1] 
+rural_pop <- midwest_data$poptotal[midwest_data$inmetro == 0]
+
+mean(urban_pop)
+mean(rural_pop)
+
+min(urban_pop)
+max(urban_pop)
+
+min(rural_pop)
+max(rural_pop)
+
+
+length(urban_pop[urban_pop < 50000])
+length(urban_pop[urban_pop < 50000])/length(urban_pop)
+
+# this is a bit more sophisticated
+sum(urban_pop < 50000)
+mean(urban_pop < 5000)
+
+```
+
+1. You can use `sort()` to see the numbers in order.
+    
+1. What is the population of the 10th smallest urban county in the midwest? How about the 10th largest? (Hint: Use `?sort` to learn how to change the order of your sort.)
+
+    ```{r, echo = TRUE}
+    # SOLUTION
+    # 10th smallest
+    sort(midwest_data$poptotal[midwest_data$inmetro == 1] )[10]
+    # 10th largest
+    sort(midwest_data$poptotal[midwest_data$inmetro == 1], decreasing = TRUE )[10]
+    ```
+
+1. What are the name of the 4 urban counties with population under 20000? (You can use `&` to combine conditional expressions.)
+1. What are the PID of the 4 urban counties with population under 20000?
+
+```{r, include=TRUE}
+# SOLUTION
+midwest_data$county[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1]
+midwest_data$PID[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1]
+# we could also use double indexing as we discuss below.
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, "PID"]
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, "state"]
+```
+1. What states are those counties in?
+
+*See above*
+
+
+1. *Common error*: Run the code below and get an error that says "Column `County` doesn't exist". Fix the error.
+
+```{r, eval=FALSE}
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, 
+             c("County", "state", "poptotal", "popdensity", "inmetro")]
+```
+
+*This is a typo, the column name is `country`*
+
+1. Adjust the code above so we get the same rows, but see all the columns.
+
+```{r, include = TRUE}
+midwest_data[midwest_data$poptotal < 20000 & midwest_data$inmetro == 1, ]
+```
+
+1. These are the low population counties where `inmetro` is 1.  Are the population densities low? Compare them to the population densities of similar population counties where `inmetro` is `0`. If you have time, you can look at the locations on a map and get a better understanding of what `inmetro` captures.
+
+```{r, include = TRUE}
+# the popdensity are similar for these regions, though the inmetro == 1 counties 
+# are slightly bigger
+midwest_data[midwest_data$inmetro == 0 & midwest_data$poptotal < 20000, ]
+
+midwest_data[midwest_data$inmetro == 0,  "popdensity"]
+```
+
+**Rapid fire:** 
+
+Using `[` and `$` complete the following challenges:
+
+1. What states have an Adams County?
+1. How many counties are in Indiana?
+1. What county has the highest percent Asian in this data? 
+1. Make a data frame that includes the 10 largest counties (by total population) and shows the county, state, total population, and percent with college degree. Assign the output to the name `top_ten`.
+
+
+```{r, include = FALSE}
+midwest_data[midwest_data$county == "ADAMS", "state"]
+nrow(midwest_data[midwest_data$state == "IN", ])
+midwest_data[midwest_data$percasian == max(midwest_data$percasian), ]
+
+tenth_largest <- sort(midwest_data$poptotal, decreasing = TRUE)[10]
+top_ten <- midwest_data[midwest_data$poptotal >= tenth_largest, c("county", "state", "poptotal", "percollege") ]
+
+```
+
+
+1. A student tried to answer "How many counties are in Indiana?" with the following code:
+
+```{r}
+length(midwest_data[midwest_data$state == "IN", ])
+```
+
+What does `length()` count for `tibble`s and `data.frame`s?^[Use `nrow()` instead!]
+
+*Length provides the number of columns! This makes sense if we keep in mind that the tibble is a list and the relevant length is the number of "pointers" need to store the list.*
+
+## Ordering columns
+
+It would be nice to sort the table with the 10 largest counties by population. How do we do that?
+
+Let's start with a simpler example -- this is a good way to get intuition for what the code does! 
+
+
+1. Create the following test data set. Your random numbers will be different!
+
+    ```{r}
+    test_data <- tibble(
+      id = c(1, 4, 2, 3, 5),
+      gpa = 4 * runif(5)
+    )
+    
+    test_data
+    ```
+
+1. Explain what the following code does.
+
+    ```{r}
+    test_data[c(1, 2),]
+    test_data[c(2, 1),]
+    ```
+    Did you notice that the order of the rows changed! This suggests that we could re-order or sort the data frame, if we knew the correct **order** of the rows.
+    
+1. Pull out the rows that correspond to ids 1, 2, 3.  (e.g. the **3**rd row corresponds to `id` number 2). To make a data frame like this:
+
+    ```{r, echo = TRUE}
+    # Solution
+    test_data[c(1,3,4), ] 
+    ```
+
+1. base R has a function called `order()` which tells you the order of the rows (in increasing order). Use `order()` on the test_data ids. Plug this into your `[` to sort the data.
+
+    ```{r, echo = TRUE}
+    # Solution
+    test_data[order(test_data$id), ] 
+    ```
+
+1. Now sort `top_ten` in **decreasing** order. The expected output is:
+
+    ```{r, echo = TRUE}
+    # Solution
+    top_ten[order(top_ten$poptotal, decreasing = TRUE), ] 
+    ```
+
+## II. Investigate the `diamonds` dataset
+
+Throughout this exercise, we will be working with the `diamonds` dataset (comes with `tidyverse`), which contains the prices and other attributes of almost 54,000 diamonds. (use `?diamonds` to see the codebook.)
+
+1. Run the following command to familiarize ourselves with this dataset. How many observations and variables are included in `diamonds`? 
+
+    **SOLUTION: 53,940 observations (rows) and 10 variables (columns)**
+    
+```{r, eval = FALSE}
+# tidyverse
+glimpse(diamonds)
+# base R (utils)
+str(diamonds)
+```
+
+2. Try to describe the shape and center of the `price` distribution by observing the summary statistics like the mean, median and quartiles.
+
+  **SOLUTION: We see that the mean is much larger than the median, which suggests there are some very expensive diamonds in the right tail of the distribution.**
+
+```{r, eval = FALSE}
+summary(diamonds$price)
+```
+
+3. How many diamonds cost less than \$500? less than \$250? How many diamonds cost \$15000 or more?
+
+    **Solution: from the summary, we see there are no diamonds less than \$250. It's also clear that <\$500 and >\$15000 are a small portion of the data as both values are close to the extremes and outside of the middle 50 percent of the data (aka the interquartile range). Specifcally:**
+    
+```{r}
+nrow(diamonds[diamonds$price < 500, ])    
+nrow(diamonds[diamonds$price > 15000, ])    
+
+```
+    
+4. Which cut has the highest priced diamond? What is the price?
+
+```{r}
+# bracket and dollar sign solution 
+diamonds[diamonds$price == max(diamonds$price), c("cut", "price")]
+```
+
+
+5. Redo part 4 with the lowest priced diamond.
+
+```{r}
+diamonds[diamonds$price == min(diamonds$price), c("cut", "price")]
+```
+
+6. Is there any relationship between `price` and `carat` of a diamond? What might explain that pattern? Run the code below and comment on the result.
+
+```{r, eval=FALSE, echo=TRUE}
+ggplot(diamonds) + 
+  geom_point(aes(x = log(carat), y = log(price)), 
+                color = "lightblue") +
+  labs(title = "Price vs Carat")
+```
+
+7. What does the graph look like if we don't take logs? Is the relationship still linear? 
+
+**Solution: When we remove the logs, the relationship is no longer linear. We see a large increase in price that is quite dispersed once the diamond is over 1 carat. We also notice bunching around round numbers of carats**
+
+
+```{r, eval=TRUE, echo=TRUE}
+ggplot(diamonds) + 
+  geom_point(aes(x = carat, y = price), 
+                color = "lightblue") +
+  labs(title = "Price vs Carat")
+```
+
+8. We might want the specific statistical relationship. How much does log(price) increase on average when the log(carat) size increases by one unit? Enter statistics!
+
+The function `lm()` runs a "linear regression" and answers our question: the log(price) increases by 1.676 log units for each log-carat.^[This is a preview of your stats sequence!] 
+
+
+```{r, eval=FALSE}
+lm(log(price) ~ log(carat), data = diamonds)
+```
+
+9. We can visualize this using the following code:
+
+```{r, eval=FALSE, echo=TRUE}
+ggplot(diamonds) + 
+  geom_point(aes(x = log(carat), y = log(price)), 
+                color = "lightblue") +
+  # we get the estimates from linear regression output
+  geom_abline(aes(slope = 1.676, intercept = 8.449)) + 
+  labs(title = "Price vs Carat")
+```
+
+10. Is the relationship is stable across `cut`? Run a regression to find out how much does `log(price)` increase on average when the `log(carat)` size increases by one unit for __good cut diamonds__?  Make a plot showing the relationship.
+
+```{r}
+good_cut_diamonds <- diamonds[diamonds$cut == "Good",]
+
+lm(log(price) ~ log(carat), data = good_cut_diamonds)
+
+ggplot(good_cut_diamonds) + 
+  geom_point(aes(x = log(carat), y = log(price)), 
+                color = "lightblue") +
+  geom_abline(aes(slope = 1.736, intercept =  8.376)) + 
+  labs(title = "Price vs Carat: Good cut diamonds")
+```
+
+
+
+
+## We can make the above plots with base R as well.
+
+
+```{r, eval=TRUE, echo=TRUE}
+reg_model <- lm(log(price) ~ log(carat), data = diamonds)
+
+plot(log(price) ~ log(carat), # plot log(price) by log(carat)
+     type = "p", # plot type "p" (points)
+     data = diamonds, # data from diamonds
+     ylab = "log price", # add y-axis label
+     xlab = "log carat", # add x-axis label
+     main = "Price vs Carat" # add title
+    )
+abline(reg_model, col="green")
+```
+
+
+```{r, eval=TRUE, echo=TRUE}
+plot(price ~ carat, # plot log(price) by log(carat)
+     type = "p", # plot type "p" (points)
+     data = diamonds, # data from diamonds
+     ylab = "price", # add y-axis label
+     xlab = "carat", # add x-axis label
+     main = "Price vs Carat" # add title
+    )
+```
+

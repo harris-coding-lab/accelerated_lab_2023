@@ -65,7 +65,7 @@ Open an R script so you can save your code for later!
     # use View(storms) to see the full dataset
     storms %>%
       group_by(name, year) %>%
-      filter(max(category) == 5)
+      filter(max(category, na.rm = TRUE) == 5)
     ```
 
 5. Assign the code above to the name `big_storms`. What is the difference between `storms` and `big_storms`?
