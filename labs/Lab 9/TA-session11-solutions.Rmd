@@ -1,0 +1,249 @@
+---
+title: "TA Session 11: Grouped Analysis (solutions)"
+author: "Harris Coding Camp"
+date: "Summer 2022"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(dplyr.summarise.inform = FALSE)
+
+library(tidyverse)
+library(stringr)
+link <- 'https://github.com/harris-coding-lab/harris-coding-lab.github.io/raw/master/data/data_traffic.csv'
+traffic_data <- read_csv(link)
+
+traffic_stop_frequencies <- traffic_data %>% 
+      group_by(Race) %>% 
+      summarize(n = n()) %>%
+      mutate(freq = n / sum(n))    
+```
+
+We expect you to **watch the `class 4` material**, [here](harris-coding-lab.github.io) prior to lab. In addition, **read the background and data section before lab**.
+
+# Background and data
+
+```{r, echo = FALSE, maxwidth = 150}
+#include_tweet("https://twitter.com/nomadj1s/status/1294390352904966151")
+```
+
+
+Follow the [tweet thread](https://twitter.com/nomadj1s/status/1294390352904966151) and you'll see that Prof. Damon Jones, of Harris, gets that data and does some analysis. In this lab, you're going to follow his lead and dig into traffic stop data from the University of Chicago Police Department, one of the largest private police forces in the world.
+
+
+Download the data [here](https://github.com/harris-coding-lab/harris-coding-lab.github.io/raw/master/data/data_traffic.csv).
+
+
+# Warm-up
+
+1. Open a new `Rmd` and save it in your coding lab folder. If you have not yet, move your data file to your preferred data location. 
+
+2. In your `Rmd`, write code to load your packages. If you load packages in the console, you will get an error when you knit because knitting starts a fresh R session.
+
+```{r}
+library("tidyverse")
+```
+
+3. Load `data_traffic.csv` and assign it to the name `traffic_data`. This data was scrapped from the UCPD website and partially cleaned by Prof. Jones. 
+
+  *Note:* This solution may vary depending on where your csv file is, compared to the Rmd file location. Please refer to Lab 3's Problem Set for more information
+
+```{r, message=FALSE}
+traffic_data <- read_csv("https://github.com/harris-coding-lab/harris-coding-lab.github.io/raw/master/data/data_traffic.csv")
+```
+
+
+4. Recall that `group_by()` operates silently.
+
+**a. How can you tell `grouped_data` different from `traffic_data`?**
+
+You can use summarise() to check the grouped data: 
+    
+```{r}
+grouped_data <- traffic_data %>%
+  group_by(Race, Gender)
+
+summarise(grouped_data)
+```
+    
+**b. How many groups (Race-Gender pairs) are in the data? (This information should be available without writing additional code!)**
+
+SOLUTION:
+
+Fourteen (14) - the number of rows in the tibble.
+    
+**c. Before running the code. Predict the dimensions (number of rows by number of columns) of the tibbles created by `traffic_data %>% summarize(n = n())` and `grouped_data %>% summarize(n = n())`.**
+
+SOLUTION:
+
+The traffic_data summary will be a 1x1 tibble and the grouped_data summary will be a 14x3 tibble
+
+**d. Now check you intuition by running the code.**
+
+SOLUTION:
+    
+```{r}
+traffic_data %>% summarize(n = n())
+```
+
+```{r}
+grouped_data %>% summarize(n = n())
+```
+
+**5. Use `group_by()` and `summarize()` to recreate the following table.**
+
+SOLUTION:
+
+```{r}
+traffic_data %>% 
+  group_by(Race) %>% 
+  summarize(n = n())
+```
+
+**6. Use `count()` to produce the same table.**
+
+SOLUTION:
+
+```{r}
+traffic_data %>% 
+  count(Race)
+```
+    
+\newpage
+## Moving beyond counts
+
+**1. Raw counts are okay, but frequencies (or proportions) are easier to compare across data sets. Add a column with frequencies and assign the new tibble to the name `traffic_stop_freq`. The result should be identical to Prof. Jones's analysis on twitter.**
+
+    Try on your own first. If you're not sure how to add a frequency though, you could google "add a proportion to count with tidyverse" and find this [stackoverflow post](https://stackoverflow.com/questions/24576515/relative-frequencies-proportions-with-dplyr).  Follow the advice of the number one answer. The green checkmark and large number of upvotes indicate the answer is likely reliable.
+    
+SOLUTION:
+    
+```{r}
+traffic_stop_freq <- traffic_data %>%
+  group_by(Race) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n))
+    
+traffic_stop_freq
+```
+            
+
+**2. The frequencies out of context are not super insightful. What additional information do we need to argue the police are disproportionately stopping members of a certain group? (Hint: Prof. Jones shares the information in his tweets.)^[To be fair, even with this information, this is crude evidence that can be explained away in any number of ways. One job of a policy analyst is to bring together evidence from a variety of sources to better understand the issue.]**
+
+SOLUTION:
+
+Prof Jones compares these frequencies with two other frequencies: the demographic breakdown of Hyde Park and the breakdown of UChicago Students races. 
+
+**3. For the problem above, your groupmate tried the following code. Explain why the frequencies are all 1.^[Hint: This is a lesson about `group_by()`!]**
+
+SOLUTION:
+
+```{r, eval = FALSE}
+traffic_stop_freq_bad <- traffic_data %>% 
+  group_by(Race) %>% 
+  summarize(n = n(),
+            freq = n / sum(n))
+
+traffic_stop_freq_bad
+```
+    
+As explained in the linked stackoverflow post, the last grouping variable is peeled off *after* the summarise function, by default. So, if you calculate frequencies within the summarize function, the data will still be grouped by race and therefore each frequency must be 1. However, if you calculate frequencies after the summarise function, the whole data will be ungrouped and frequencies can be properly calculated.
+    
+**4. Now we want to go a step further than Prof. Jones.^[The analysis that follows is partially inspired by Eric Langowski, a Harris alum, who was also inspired to investigate by the existence of this data  (You may have seen Prof. Jones retweet him at the end of the thread.)] Do outcomes differ by race? In the first code block below, I provide code so you can visualize disposition by race. "Disposition" is police jargon that means the current status or final outcome of a police interaction.**
+
+    ```{r}
+citation_strings <- c("citation issued", "citations issued", "citation  issued" )
+    
+arrest_strings <- c("citation issued, arrested on active warrant",
+                    "citation issued; arrested on warrant",
+                    "arrested by cpd",
+                    "arrested on warrant",
+                    "arrested",
+                    "arrest")
+    
+disposition_by_race <- traffic_data %>% 
+  mutate(Disposition = str_to_lower(Disposition),
+         Disposition = case_when(Disposition %in% citation_strings ~ "citation",
+                                 Disposition %in% arrest_strings ~ "arrest",
+                                 TRUE ~ Disposition)) %>%
+  count(Race, Disposition) %>%
+  group_by(Race) %>%
+  mutate(freq = round(n / sum(n), 3))  
+        
+    
+disposition_by_race %>%
+  filter(n > 5, Disposition == "citation") %>%
+  ggplot(aes(y = freq, x = Race)) + 
+  geom_col() + 
+  labs(y = "Citation Rate Once Stopped", x = "", title = "Traffic Citation Rate") +
+  theme_minimal()
+```
+
+Let's break down how we got to this code. First, I ran `traffic_data %>% count(Race, Disposition)` and noticed that we have a lot of variety in how officers enter information into the system.^[Try it yourself!] I knew I could deal with some of the issue by standardizing capitalization.  
+
+a. In the console, try out `str_to_lower(...)` by replacing the `...` with different strings. The name may be clear enough, but what does  `str_to_lower()` do?^[This code comes from the `stringr` package. Checkout `?str_to_lower` to learn about some related functions.]
+
+```{r}
+traffic_data %>%
+  count(Race, Disposition)
+```
+      
+```{r}
+str_to_lower("Citation Issued")
+```
+      
+    After using `mutate` with  `str_to_lower()`, I piped into `count()` again and looked for strings that represent the same `Disposition`. I stored terms in character vectors (e.g. `citation_strings`). The purpose is to make the `case_when()` easier to code and read. Once I got that right, I added frequencies to finalize `disposition_by_race`. 
+    See code above.
+
+**5. To make the graph, I first tried to get all the disposition data on the same plot.**
+
+SOLUTION:
+
+```{r}
+disposition_by_race %>%
+  ggplot(aes(y = freq, x = Race, fill = Disposition)) + 
+  geom_col() 
+
+```
+
+By default, the bar graph is stacked. Look at the resulting graph and discuss the pros and cons of this plot with your group.
+
+**6. I decided I would focus on citations only and added the `filter(n > 5, Disposition == "citation")` to the code.^[Notice that I get the data exactly how I wanted it using `dplyr` verbs and then try to make the graph.] What is the impact of filtering based on `n > 5`? Would you make the same choice? This question doesn't have a "right" answer. You should try different options and reflect.**
+
+SOLUTION:
+
+Here are some arguments (not a comprehensive list):
+
+Against:
+
+- We throw away information. 
+- `n` here is already subdivided based on "Disposition", but it would make more sense to filter based on number of observations for a given race rather than a race-disposition count.
+    
+For:
+
+- small `n` groups can be misleading since one interaction can sway the result significantly.
+- An alternative is to create an "other" category, though that might bury heterogeneity across the smallest groups.
+  
+\newpage
+7. Now, you can create a similar plot based called "Search Rate" using the `Search` variable. Write code to reproduce this plot.
+
+SOLUTION:
+
+```{r}
+search <- traffic_data %>% 
+  mutate(Search = str_to_lower(Search),
+         Search = ifelse(is.na(Search) | Search == "N/A","No" , Search)) %>%
+  count(Race, Search) %>%
+  group_by(Race) %>%
+  mutate(freq = n / sum(n))
+
+
+search %>%
+  filter(Search == "yes", n > 0) %>%
+ggplot(aes(y = freq, x = Race)) + 
+      geom_col() + 
+      labs(y = "Search Rate Once Stopped", x = "", title = "Search Rate") + 
+      theme_minimal()
+```
