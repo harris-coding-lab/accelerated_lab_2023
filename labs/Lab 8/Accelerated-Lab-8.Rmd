@@ -17,7 +17,7 @@ college_recent_grads <- read_dta("../Data/recent_college_grads.dta")
 
 # Data and background
 
-1. We'll work with data sets from `recent_college_grads.dta`, which you can download [here](https://github.com/jacobjameson/jacob_jameson.github.io/raw/master/lab/Module_5_Data.zip). This is data on college majors and earnings, specifically the data behind the FiveThirtyEight story [“The Economic Guide To Picking A College Major”](https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/).
+1. We'll work with data sets from `recent_college_grads.dta`, which you can download [here](https://github.com/harris-coding-lab/accelerated_lab_2023/raw/main/labs/Data/recent_college_grads.dta). This is data on college majors and earnings, specifically the data behind the FiveThirtyEight story [“The Economic Guide To Picking A College Major”](https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/).
 
 2. Load the packages you'll need: `tidyverse` and the package with code to read `dta` files)^[`haven`]. 
 
