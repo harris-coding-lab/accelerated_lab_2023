@@ -1,0 +1,866 @@
+---
+title: 'Lecture 3: Data Manipulation with `dplyr`'
+author: "Harris Coding Camp -- Accelerated Track"
+date: "Summer 2023"
+output:
+  beamer_presentation:
+    fig_width: 6
+    fig_height: 4
+    includes:
+      in_header: ../resources/header_page_n.tex
+---
+
+```{r, setup=TRUE, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(readxl)
+options(dplyr.summarise.inform = FALSE)
+
+
+txhousing_short <- head(txhousing)
+txhousing_narrow <- txhousing %>% 
+                          select(city, year) %>% 
+                          distinct()
+txhousing_example <- txhousing %>% 
+                          filter(city %in% c("Houston", "Dallas")) %>%
+                          select(city, year, month, sales, volume)
+```
+
+
+
+# Brainstorm: What types of actions do you need to work with data sets?
+
+
+## Data manipulation with `dplyr`
+
+The `dplyr` library provides a toolkit for data manipulation.
+
+Today will cover:
+
+- `select()` to pick columns
+- `filter()` to get rows that meet a criteria
+- `arrange()` to order the data
+- `mutate()` to create new columns
+- `summarize()` to summarize data
+
+
+As I show you examples, I'll work with variations of `txhousing` a data set
+built-in to `dplyr`
+
+
+##  `tidyverse` origins: `dplyr` 
+
+![](../resources/images/dplyr_in_tidyverse.png)
+
+
+
+## selecting **columns**
+
+![](../resources/images/02_select.png){#id .class width=80% height=80%}
+
+## You want to present a subset of your **columns**
+
+```{r}
+select(txhousing_short, city, date, sales, listings)
+```
+
+
+## `select()` extends `[, col_expressions]`
+
+```{r}
+identical(
+  select(txhousing, city, date, sales, listings),
+  txhousing[, c("city", "date", "sales", "listings")],
+)
+```
+
+Compare:
+
+ -`select` can operate with column names while `[` requires characters.
+ -`select` doesn't require column names to be in a single vector
+
+
+
+## exclude columns with `select()` and `-`
+
+`-` says to exclude the columns listed in the vector.
+
+
+```{r}
+select(txhousing_short, -c(city, date, sales, listings, year))
+```
+
+## `tidyverse` provides helpers for pulling out columns
+
+
+I want a bunch of columns with similar names.
+
+- use `starts_with()`, `ends_with()`, `contains()`
+- or `matches()` with regular expressions
+
+```{r, eval = TRUE}
+# baseR requires more coding knowledge
+# txhousing[,grep("^city", names(txhousing))]
+
+select(txhousing_short, ends_with("e"))
+
+```
+
+
+
+##  Use case: You want to reorder your columns
+
+- Notice we used a "select_helpers" function `everything()`. 
+- See also `dplyr` function `relocate()`
+
+
+```{r}
+select(txhousing_short, 
+       year, month, date, everything()) 
+```
+
+## select helpers only work with `select()`
+
+You may see this error^[check out `?tidyselect::select_helpers()` and R4DS section on `select()`]
+
+```
+`contains()` must be used within a *selecting* function.
+See <https://tidyselect.r-lib.org/reference/faq-selection-context.html>.
+```
+
+
+For similar functionality outside of "selecting", see the `stringr` package
+
+
+## choose **rows** that match a condition
+
+![](../resources/images/02_filter.png){#id .class width=80% height=80%}
+
+## choose rows that match a condition with `filter()`
+
+Get all the data from 2013
+```{r}
+filter(txhousing, year == 2013)
+```
+
+
+##  `filter()` extends `[row_expression, ]`
+
+```{r}
+identical(
+  filter(txhousing, year == 2013),
+  txhousing[txhousing$year == 2013, ]
+)
+```
+
+Notice that `filter` can operate with column names while `[` requires that you use a vector.
+
+
+## `filter()` drops comparisons that result in `NA`
+
+Compare:
+
+```{r}
+df <- tibble(x = c(1, 2, NA))
+filter(df, x > 1)
+df[df$x > 1, ]
+```
+
+
+##  When you think  `filter()`, think comparison operator!
+
+Recall: Comparison operators return TRUE or FALSE
+
+| Operator | Name |
+|:---------:|:---:|
+| < | less than |
+| > | greater than |
+| <= | less than or equal to |
+| >= | greater than or equal to |
+| == | equal to |
+| != | not equal to |
+| %in% | matches something in |
+
+We've also seen `is.na()` to test for `NA`.
+
+## What does `%in%` do?
+
+```{r}
+x <- c(1, 5, 3)
+
+x %in% 5
+x %in% c(1, 2, 3, 4)
+```
+
+
+## `%in%` operator is like a bunch of OR strung together
+
+
+```{r}
+x <- c(1, 5, 3)
+
+identical(
+  # too much typing
+  x == 1 | x == 2 | x == 3 | x == 4,
+  
+  x %in% c(1, 2, 3, 4)
+)
+```
+
+
+## `%in%` operator is vectorized
+
+
+Tests *element-by-element* whether items are in the right-side! 
+
+
+```{r}
+x <- c(1, 5, 3)
+# 1 %in% c(1, 2, 3, 4)  TRUE
+# 5 %in% c(1, 2, 3, 4)  FALSE
+# 3 %in% c(1, 2, 3, 4)  FALSE
+x %in% c(1, 2, 3, 4) 
+```
+
+##  Get all the data from 2013 and beyond for Houston. 
+
+  - in `filter()` additional match criteria are treated like `and`
+ 
+```{r}
+  filter(txhousing_narrow, 
+         year >= 2013, 
+         city == "Houston")
+```
+
+
+
+## To do the same operation with `[` ... 
+
+```{r, eval = TRUE}
+identical(
+  filter(txhousing, 
+         year >= 2013,
+         city == "Houston"),
+
+txhousing[txhousing$year >= 2013 &
+                   txhousing$city == "Houston", ]
+)
+```
+
+
+
+
+## Why do we get 0 rows here?
+
+Get all the data from 2013 and beyond for Houston and Austin
+
+```{r}
+  filter(txhousing_narrow,
+         year >= 2013, 
+         city == "Houston", 
+         city == "Austin")
+```
+
+
+## There's no rows where `city` is both Houston AND Austin!
+
+We logically want data from Houston OR Austin
+
+```{r}
+  filter(txhousing_narrow,
+         year >= 2013, 
+         city == "Houston" | city == "Austin")
+```
+
+## At some point you will make this mistake!
+
+```{r, eval = FALSE}
+  filter(txhousing_narrow,
+         year >= 2013, 
+         city == "Houston" | "Austin")
+```
+
+```
+Error in filter(txhousing, year >= 2013, city == "Houston" | : 
+Caused by error in `city == "Houston" | "Austin"`:
+! operations are possible only for numeric, logical or complex types
+```
+
+## What if we want data from Houston, Austin OR Galveston
+
+```{r, eval = FALSE}
+  filter(txhousing,
+         year >= 2013, 
+         city == "Houston" | city == "Austin" | city == "Galveston")
+```
+
+There has to be an easier way!
+
+## Use `%in%`!
+
+```{r}
+  in_three_cities <- 
+    filter(txhousing,
+          year >= 2013, 
+          city %in% c("Houston", "Dallas", "Austin"))
+```
+
+
+## Why does it fail to produce the same result?
+
+```{r}
+eq_three_cities <- 
+      filter(txhousing,
+             year >= 2013, 
+             city == c("Houston", "Dallas", "Austin"))
+
+identical(in_three_cities, eq_three_cities)
+nrow(in_three_cities)
+nrow(eq_three_cities)
+```
+
+
+
+
+## Be wary of vector recycling.
+
+ `==` with vectors of different length is usually a bad idea.
+
+```{r}
+ex <- tibble(id = 1:4,
+       attribute = c("a", "a", "b", "b"))
+
+ex
+
+filter(ex, attribute == c("a", "c"))
+```
+
+## Be wary of vector recycling.
+
+```{r}
+
+# a == a
+# a == c
+# b == a
+# b == c
+
+filter(ex, attribute == c("a", "c"))
+```
+
+
+## Another win for `%in%`
+
+```{r}
+# a %in% c(a, c)
+# a %in% c(a, c)
+# b %in% c(a, c)
+# b %in% c(a, c)
+
+filter(ex, attribute %in% c("a", "c"))
+```
+
+
+##  `dplyr` concept:  Data in, Data out
+
+
+Notice that `filter()` and `select()`
+
+- data in the first position
+- `...` in the second position (i.e. allows for arbitrary number of inputs) 
+- return data
+
+
+`dplyr` functions take in a tibble and return a tibble.
+
+- This allows us to chain together data-moves without creating clutter
+
+
+But how do we chain together functions?
+
+## Introducing the pipe operator
+
+![](../resources/images/magritte.jpg)
+
+## Ceci est une `|>`
+
+The pipe `|>` operator takes the left-hand side and makes it *input* in the right-hand side.
+
+- by default, LHS is *first argument* of the RHS function.
+
+```{r, eval=FALSE}
+# a tibble is the first argument
+select(txhousing, city, year, sales, volume) 
+
+txhousing |>
+  select(city, year, sales, volume)
+```
+
+
+## Read `|>` as "and then. 
+
+```{r, eval = FALSE}
+# Take data
+txhousing |>
+  # And then select city, year, month and median
+  select(city, year, month, median) |>
+  # And then filter where year is 2013
+  filter(year == 2013) |>
+  # And then show the head  (i.e. first 6 rows)
+  head()
+```
+
+
+
+##  Chaining avoids intermediate data frames!
+
+- Coming up with names is hard.
+- Updating an object repeatedly leads to a *buggy* development process
+
+```{r}
+txhousing |>
+  select(city, year, month, median) |>
+  filter(year == 2013) |>
+  head(3)
+```
+
+##  Updating an object repeatedly `->` *buggy* code
+
+
+```{r, eval=FALSE}
+txhousing <- read_csv(...)
+
+# Code in a different chunk
+txhousing <- txhousing |>
+  mutate(important_new_col =  ..code..)
+
+# Code in yet a different chunk
+txhousing <- txhousing |> 
+  filter(important_new_col < 10)
+```
+
+Error in `filter()`: . . .
+
+! object 'important_new_col' not found
+
+## Treat coding like writing 
+
+- start with a rough draft, but polish as you go.
+- put code that defines/manipulates an object close together
+  - like writing a tight paragraph
+  - the name is the topic sentence
+
+```{r, eval=FALSE}
+# Sometimes reading data is slow, so I have this habit
+txhousing_raw <- read_csv(...)
+
+# Now only reference to with name txhousing
+# all in one chunk
+txhousing <- txhousing_raw |>
+  mutate(important_new_col =  ..code..) |> 
+  filter(important_new_col < 10)
+```
+
+
+
+
+## `%>%` is also a pipe. 
+
+- `%>%` was the original pipe in R
+  
+  - in `magrittr` package
+  - still loads when with `library(tidyverse)`
+    
+- `|>` was added to baseR in version 4.1 
+
+
+`%>%` has more bells and whistles, which can be a liability
+
+
+
+## sort rows
+
+![](../resources/images/02_arrange.png){#id .class width=80% height=80%}
+
+## sort rows with `arrange()`
+
+```{r}
+
+identical(
+  # base R
+  txhousing[order(txhousing$year), ],
+  
+  # dplyr
+  arrange(txhousing, year)
+)
+```
+
+## sort rows with `arrange()`
+
+To sort in `desc()`ending order.
+
+```{r}
+
+identical(
+  # base R
+  txhousing[order(-txhousing$year), ],
+  
+  # dplyr
+  txhousing %>% arrange(desc(year))
+)
+
+```
+
+
+## sort rows with `arrange()`
+
+- arrange can take multiple columns
+<!--Note this is a nice lead into mutate, b/c volume is so hard to read-->
+
+```{r}
+txhousing_example %>% 
+  arrange(year, month, desc(volume)) %>%
+  head()
+```
+
+
+## create columns
+
+![](../resources/images/02_mutate.png){#id .class width=80% height=80%}
+
+
+## `mutate(.data, ...)` works like other dplyr verbs
+
+```{r}
+# the data in the first position 
+txhousing_example |>
+  # after that ... create columns like so
+  mutate( volume_millions = volume / 1e6)  |>
+  head()
+``` 
+
+## creating columns with `mutate()` 
+
+When we mutate, you can create new columns.
+
+- *Right-hand side*: the name of a new column. 
+- *Left-hand side*: code that creates a vector
+
+  - no quotes and no reference to the data's name
+
+```{r}
+txhousing_example |>
+  mutate(volume_millions = volume / 1e6) |>
+  head()
+```
+  
+
+
+##  Compare to base R `$ <-`
+
+
+```{r, eval = FALSE}
+mutate(txhousing, 
+       volume_millions = volume / 1e6)
+
+txhousing$volume_millions <- 
+  txhousing$volume / 1e6
+```
+
+- baseR operates on vectors directly, requires assignment `<-`
+
+
+
+## `dplyr` functions know that `name`s refer to columns
+
+```{r}
+identical(
+# BAD: extracting the column (not as nice)  
+txhousing_example |>
+  mutate(volume_millions = txhousing_example$volume / 1e6),
+
+# GOOD: referring to the column by name!
+txhousing_example |>
+  mutate(volume_millions = volume / 1e6)
+)
+```
+
+
+
+
+## `dplyr` verbs allow many updates at once
+
+- with `mutate()`, create multiple columns
+- use information from a newly created column 
+  - code evaluated in order from top to bottom.
+
+```{r}
+txhousing_example |>
+  mutate(mean_price = volume / sales,
+         sqrt_mean_price = sqrt(mean_price)) %>%
+  head()
+```
+
+
+## The change is not permanent
+
+Until you assign the output tibble to a name!
+
+```{r}
+texas_housing_again <- 
+txhousing_example |>
+  mutate(mean_price = volume / sales,
+         sqrt_mean_price = sqrt(mean_price))
+```
+
+
+## You try it.
+  
+If you load `tidyverse`, you can access the `midwest` data 
+
+What dplyr function would you need to ...
+
+- choose the columns `county`, `state`, `poptotal`, `popdensity`
+- get the counties with population over a million
+- reorder the columns by population total
+- round the popdensity to the nearest whole number
+
+## You try it
+
+- `select()` the columns `county`, `state`, `poptotal`, `popdensity`
+- `filter()` the counties with population over a million
+- `arrange()` the columns by population total
+- `mutate()` to round the `popdensity` to the nearest whole number
+- AND `mutate()` to round the `population` totals to the nearest 1000
+
+if you finish early: Try to write it in base R
+
+```{r, echo = FALSE}
+midwest %>%
+  select(county, state, poptotal, popdensity) %>%
+  filter(poptotal > 1e6) %>%
+  arrange(desc(poptotal)) %>%
+  mutate(popdensity = round(popdensity),
+         poptotal = round(poptotal, -3)
+  # alternatively: 
+  #      poptotal = poptotal - poptotal %% 1000
+  )
+
+```
+
+
+## solution
+
+
+
+```{r, eval = FALSE}
+midwest %>%
+  select(county, state, poptotal, popdensity) %>%
+  filter(poptotal > 1e6) %>%
+  arrange(desc(poptotal)) %>%
+  mutate(popdensity = round(popdensity),
+         poptotal = poptotal - poptotal %% 1000 
+  # alternatively: 
+  #     poptotal = round(poptotal, -3)
+  )
+```
+
+
+## solution in base R
+
+```{r}
+out <- midwest[midwest$poptotal > 1e6, 
+        c("county", "state", "poptotal", "popdensity")]
+
+out$popdensity <- round(out$popdensity)
+out$poptotal <- out$poptotal - out$poptotal %% 1000 
+
+out[order(out$poptotal, decreasing = TRUE), ]
+
+
+```
+
+
+## summarize data with `summarize()`
+
+![](../resources/images/02_summarize.png)
+
+## Calculate total volume of sales in Texas from 2014. 
+
+```{r}
+txhousing %>%
+  filter(year == 2014) %>%
+  summarize(total_volume = sum(volume))
+```
+
+```{r}
+# take sum of txhousing and subset so year is 2014 and column is volume
+sum(txhousing[txhousing$year == 2014,"volume"])
+
+# take the volume column and subset values where year is 2014
+sum(txhousing$volume[txhousing$year == 2014])
+```
+
+
+
+## Calculate the mean and median number of sales in Texas's three largest cities. 
+
+```{r}
+txhousing |>
+  filter(city %in% 
+           c("Houston", "Dallas", "San Antonio")) |>
+  summarize(median_n_sales = median(sales),
+            mean_n_sales = mean(sales))
+```
+
+## summarize data with `summarize()`
+
+There are many useful functions that go with summarize. Try `?summarize` for more.
+
+```{r}
+txhousing %>%
+  summarize(n_obs = n(),
+            n_cities = n_distinct(city))
+```
+
+## Alert: `summarize()` without summarizing
+
+Weird behavior: 
+
+```{r, eval = FALSE}
+# in older versions of dplyr this gives an error
+# Error: Column `mean_price` must be length 1 (a summary value), not 561
+
+txhousing %>%
+  summarize(mean_price = volume / sales) %>%
+  head()
+```
+
+
+## piping `dplyr` verbs together
+\footnotesize
+`dplyr`verbs can be piped together in any order you want, although different orders can give you different results, so be careful!
+
+```{r, eval = FALSE}
+txhousing |>
+  select(city, year, month, sales, volume) |>
+  mutate(log_mean_price = log(volume / sales)) |>
+  filter(year == 2013) |>
+  summarize(log_mean_price_2013 = mean(log_mean_price,
+                                       na.rm = TRUE))
+  
+# Won't give you the same result as 
+# txhousing %>%
+#  select(city, year, month, sales, volume) %>%
+#  mutate(log_mean_price = log(volume / sales)) %>%
+#  summarize(log_mean_price = mean(log_mean_price, na.rm = TRUE)) %>%
+#  filter(year == 2013)
+  
+# Actually this code will give you an error, try it!
+
+```
+## Recap: manipulating data with `dplyr`
+
+We learned
+
+- how to employ the Big 5 `dplyr` verbs
+
+  - `select()` to pick columns
+  - `arrange()` to order the data
+  - `mutate()` to create new columns
+  - `filter()` to get rows that meet a criteria
+  - `summarize()` to summarize data
+
+- how to use relation operators, binary operators for math and logical operators in `dplyr` contexts
+
+
+## Next steps:
+
+Lab: 
+
+- Today lab: practice with `dplyr` verbs (and base R manipulation)
+- Tomorrow lab: more practice in data manipulation
+
+**Touchstones: I can comfortably manipulate data^[i.e. adjust or add columns to data, subset it in various ways, sort it as needs be and make summary tables.]**
+
+Next lecture: 
+
+- Using `if` and `ifelse`
+- We'll have a completely low stakes quiz to help surmise how we're doing
+<!--
+## Appendix: creating the example data
+
+```{r}
+
+txhousing_short <- head(txhousing)
+txhousing_narrow <- txhousing %>% 
+                          select(city, year) %>% 
+                          distinct()
+txhousing_example <- txhousing %>% 
+                          filter(city %in% c("Austin", "Galveston")) %>%
+                          select(city, year, month, sales, volume)
+```
+
+
+## creating columns in Base R
+
+We've hinted at how to add columns in base R. 
+
+What would you guess based on how we added values to lists or changed values in vectors?
+
+## creating columns in Base R
+
+1. Refer to a column with `$`.^[or `[[`]
+2. Assign a vector to the column name
+
+```{r, eval = TRUE}
+# convert the dollar amount to millions
+txhousing$volume_millions <- 
+  round(txhousing$volume / 1000000, 1)
+```
+
+
+## The change is permanent.
+
+Because we used an assignment operator. 
+
+```{r}
+txhousing |>
+  select(starts_with("volume")) |>
+  head()
+```
+
+##  All my x's live in Texas
+
+Vectors of size 1 are recycled.
+
+```{r}
+txhousing$state <- "Texas"
+
+txhousing |> select(city, state) |> head()
+```
+
+
+
+## solution in base R
+
+- You may also see some base R functions that are antecedents to
+  dplyr
+  
+- (comparison of subset and filter on stackoverflow)[https://stackoverflow.com/questions/39882463/difference-between-subset-and-filter-from-dplyr]
+
+```{r, eval = FALSE}
+# subset: filters and selects referring to names
+out <- subset(midwest, poptotal > 1e6, 
+        c(county, state, poptotal, popdensity))
+
+
+# within: mutate but with unfortunate syntax 
+out <- within(out,{
+                popdensity <- round(popdensity)
+                poptotal <- poptotal - poptotal %% 1000 
+              })
+
+out[order(out$poptotal, decreasing = TRUE), ]
+
+
+```
+-->

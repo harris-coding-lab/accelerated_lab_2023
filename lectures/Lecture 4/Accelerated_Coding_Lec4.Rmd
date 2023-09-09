@@ -1,0 +1,880 @@
+---
+title: 'Accelerated Lecture 4: If statements and conditionals'
+author: "Harris Coding Camp -- Standard Track"
+date: "Summer 2022"
+output:
+  beamer_presentation:
+    fig_width: 6
+    fig_height: 4
+    includes:
+      in_header: ../resources/header_page_n.tex
+---
+```{r, setup=TRUE, include=FALSE}
+library(tidyverse)
+library(readr)
+options(dplyr.summarise.inform = FALSE) # Suppress summarize info in dplyr >= 1.0
+
+south_africa_data <- readxl::read_xlsx("../../labs/Data/world_wealth_inequality.xlsx",
+                         col_names = c("country", "indicator", "percentile", "year", "value")) |>
+  separate(indicator, sep = "[\\r]?\\n",
+          into = c("row_tag", "type", "notes", "empty")) |> 
+  filter(country == "South Africa", !is.na(value)) |>
+  select(country, percentile, year, value)
+```
+
+## Review: Subsetting data
+
+```{r, eval = FALSE}
+# tidyverse
+data |>
+  filter(row_condition) |>
+  select(columns, we, want)
+
+# base R
+data[row_condition, c("columns", "we", "want"]
+```
+
+
+## Review: Do these `filter()` calls give the same result?
+
+```{r, eval = FALSE}
+south_africa_data |>
+  filter(percentile == "p0p50",
+         value == max(value, na.rm = TRUE))
+
+south_africa_data |>
+  filter(percentile == "p0p50") |>
+  filter(value == max(value, na.rm = TRUE)) 
+```
+
+## Review: Why not?
+
+```{r, eval = TRUE}
+identical(
+south_africa_data |>
+  filter(percentile == "p0p50",
+         value == max(value, na.rm = TRUE)),
+south_africa_data |>
+  filter(percentile == "p0p50") |>
+  filter(value == max(value, na.rm = TRUE)) 
+)
+```
+
+
+## Review: Subsetting data
+
+
+```{r, eval = FALSE}
+south_africa_data |>
+  filter(percentile == "p0p50",
+         value == max(value, na.rm = TRUE))
+
+# this is the max for ALL income groups.
+max(south_africa_data$value, na.rm = TRUE) 
+
+
+```
+
+## Review: Subsetting data
+\footnotesize
+Here, we use the `max()` on the bottom half only.
+
+```{r, eval = FALSE}
+south_africa_data |>
+  filter(percentile == "p0p50") |>
+  filter(value == max(value, na.rm = TRUE)) 
+```
+
+We could rewrite the code like so.
+
+```{r}
+bottom_half <- south_africa_data |>
+  filter(percentile == "p0p50") 
+
+# this is the max for the bottom half income groups.
+bottom_half |> 
+  filter(value == max(value, na.rm = TRUE)) 
+```
+
+
+## Review: Sorting data
+
+```{r, eval = FALSE}
+# tidyverse
+arrange(data, col, desc(col2))
+
+# base R
+data[order(data$col, -data$col2),]
+```
+
+
+## Review: Summarizing data
+
+```{r, eval = FALSE}
+
+# tidyverse 
+# results in a tibble with 1 row
+summarize(data, mean = mean(col))
+
+# base R
+# results in a vector of length 1
+mean(data$col)
+```
+
+\footnotesize
+- Let `mean` stand in for any function that *reduces* a vector to a **single value**
+
+## Review: Creating new data
+
+
+```{r, eval = FALSE}
+# tidyverse
+data <- data |> mutate(new_column = something) 
+
+# base R
+data$new_column <- something 
+```
+
+
+Same functionality to change old data:
+
+```{r, eval = FALSE}
+# tidyverse
+data <- data |> mutate(old_column = something) 
+
+# base R
+data$old_column <- something 
+```
+
+\footnotesize
+- `something` is a vector length nrow(data) or 1
+
+# Quiz time -- no stakes!!
+
+##  Do your best! Do it by yourself!
+
+- Only resource is R and RStudio
+
+
+Go to Canvas
+
+- Click on `Gradescope`
+- Click on `Accelerated Quiz`
+- 10 minute timer starts when you open it
+
+
+
+
+## How would we make a column dependent on other data?
+\footnotesize
+```{r, echo = FALSE}
+set.seed(12)
+d <- tibble(x = 1:4,
+       y = round(rnorm(4), 1))
+
+d
+```
+
+Add column dependent on `y`
+```{r, echo = FALSE}
+d |> mutate(set_neg_y_to_0 = ifelse(y < 0, 0, y))
+```
+
+
+# Call in `if` and `ifelse`
+
+
+## When we want code to do something depending on the context
+
+
+```{r eval=FALSE}
+
+ifelse(test, yes, no)
+
+
+if (test is TRUE) {
+  do this
+} else {  # test is FALSE                    
+  do this other thing
+}
+```
+
+We will cover:
+
+ - introduce vectorized `ifelse` and `case_when()` statements 
+ - introduce `if` and `else` statements
+
+
+
+##  Syntax: `ifelse(test, yes, no)` 
+
+- **if**`test` is TRUE return  `yes`
+- **else** `test` is FALSE return `no`
+
+```{r}
+x <- c(5, 50)
+
+ifelse(x > 10, "x is big", "x is small")
+```
+
+
+##  `ifelse(test, yes, no)` is vectorized
+
+```{r}
+x <- c(5, 50, log(1e11), -1)
+# 5 > 10 ?          ... no
+# 50 > 10 ?         ... yes
+# log(1e11) > 10 ?  ... yes
+# -1 > 10 ?         ... no
+ifelse(x > 10, "x is big", "x is small")
+```
+
+## What will the following statements return? 
+
+```{r eval=FALSE}
+
+ifelse(is.na(NA), 1, 2)
+
+
+ifelse(is.na("a"), 1, 2)
+```
+
+## `test` typically evaluates to a boolean vector 
+
+Think of:
+
+- conditional operators
+- is.<type>() tests
+
+```{r eval=TRUE}
+# ifelse(is.na(NA), 1, 2)
+ifelse(TRUE, 1, 2)
+
+# ifelse(is.na("a"), 1, 2)
+ifelse(FALSE, 1, 2)
+```
+
+
+## `TRUE` gives option 1, `FALSE` gives option 2
+
+```{r eval=TRUE}
+# ifelse(TRUE, 1, 2)
+ifelse(is.na(NA), 1, 2)
+
+
+# ifelse(FALSE, 1, 2)
+ifelse(is.na("a"), 1, 2)
+```
+
+
+## What will the following statements return? 
+
+```{r eval=FALSE}
+ifelse(c(TRUE, FALSE, FALSE, TRUE), "a", "b")
+
+ifelse(1:4 > 3, "a", "b")
+
+```
+
+## What will the following statements return? 
+
+```{r eval=TRUE}
+ifelse(c(TRUE, FALSE, FALSE, TRUE), "a", "b")
+
+ifelse(1:4 > 3, "a", "b")
+```
+
+## Another example
+
+```{r}
+trial_1 <- c(98, 20, 100, 18, 40)
+trial_2 <- c(30, 41, 64, 8, 70)
+
+ifelse(trial_1 > trial_2, trial_1, trial_2)
+```
+
+
+## What should the following code returns?
+
+```{r, eval = FALSE}
+states <- c("IL", NA, "IA", "NM")
+
+ifelse(states == "IL", "home", "elsewhere")
+```
+
+## `NA` still contagious
+
+```{r}
+states <- c("IL", NA, "IA", "NM")
+
+ifelse(states == "IL", "home", "elsewhere")
+```
+
+
+
+## Using `ifelse` with data
+\footnotesize
+Add a column called vowel which is 1 for "a", "e", "i", "o" and "u" and 0 otherwise.^[Sorry "y"!]
+
+```{r}
+alphabet <- tibble(letters = letters)
+head(alphabet)
+```
+
+## Call `ifelse()` inside `mutate()`!
+
+
+\footnotesize
+```{r}
+alphabet |>
+  mutate(vowel = 
+          ifelse(letters %in% c("a", "e", "i", "o","u"), 
+                 1, 0)) |>
+  head()
+```
+
+Code that works on vectors, will work on columns. After all, they're vectors!
+
+## Of course, you'll see baseR do this too
+
+\footnotesize
+
+```{r, eval = FALSE}
+alphabet$vowel <- 
+  ifelse(alphabet$letters %in% c("a", "e", "i", "o","u"), 
+         1, 0)
+```
+
+# Are we stuck with two outcomes?
+
+
+
+## `ifelse` statements with multiple categories
+
+Let's make the `vowel` column 
+
+- "yes" for "aeiou"
+- "sometimes" for "y" 
+- "no" for everything else
+
+```{r}
+tail(alphabet)
+```
+
+## Option 1: call `ifelse` multiple times
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = "no",
+    vowel = ifelse(letters == "y", "sometimes", vowel),
+    vowel = ifelse(letters %in%  c("a", "e", "i", "o", "u"), 
+                   "yes", vowel)
+  ) |>
+  tail()
+```
+## Option 1: call `ifelse` multiple times
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = "no"
+  ) |>
+  tail()
+```
+
+
+## Option 1: call `ifelse` multiple times
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = "no",
+    vowel = ifelse(letters == "y", "sometimes", vowel)
+  ) |>
+  tail()
+```
+
+
+
+## Option 1: call `ifelse` multiple times
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = "no", 
+    vowel = ifelse(letters == "y", "sometimes", vowel),
+    vowel = ifelse(letters %in%  c("a", "e", "i", "o", "u"), 
+                   "yes", vowel)
+  ) |>
+  tail()
+```
+
+
+## Option 2: nest the `ifelse`
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = ifelse(letters == "y", 
+                   "sometimes", 
+            ifelse(letters %in%  c("a", "e", "i", "o", "u"),
+                   "yes", "no"))
+  ) |>
+  tail()
+```
+
+## option 3: `case_when()`
+
+```{r}
+alphabet |>
+  mutate(
+    vowel = 
+      case_when(
+        letters == "y" ~ "sometimes", 
+        letters %in%  c("a", "e", "i", "o", "u") ~ "yes",
+        TRUE ~  "no")
+  ) |>
+  tail()
+```
+
+
+## Another nested `ifelse` example
+\footnotesize
+```{r}
+txhousing |> 
+  select(city, year, month, median) |>
+  mutate(housing_market = 
+      ifelse(median < 100000, "first quartile",
+      ifelse(median < 123800, "second quartile",
+      ifelse(median < 150000, "third quartile",
+      ifelse(median < 350000, "fourth quartile",
+             NA))))
+           ) |> 
+  head(3)
+```
+
+
+## `case_when` again
+\footnotesize
+
+```{r eval=FALSE}
+# add a column called `housing_market` to the `txhousing` 
+txhousing |> 
+  select(city, year, month, median) |>
+  mutate(housing_market = 
+         case_when(
+           median < 100000 ~ "first quartile",
+           median < 123800 ~ "second quartile",
+           median < 150000 ~ "third quartile",
+           median < 350000 ~ "fourth quartile"
+         ))  |>
+  head(3)
+```
+
+
+## `case_when` statements are a bit "surly"
+\footnotesize
+`case_when` will not do type coercion. 
+
+```{r, eval = FALSE}
+txhousing |> 
+  mutate(housing_market = 
+        case_when(
+           median < 100000 ~ 1,
+           median < 123800 ~ "second quartile",
+           median < 150000 ~ "third quartile",
+           median < 350000 ~ "fourth quartile"
+         )) |> 
+  select(city, median, housing_market)
+
+Error: must be a double vector, not a character vector
+Run `rlang::last_error()` to see where the error occurred.
+```
+
+Here we try to include *both* doubles and characters in the `housing_market` column, but atomic vectors can only have one type!
+
+  - Rather than coerce and provide a warning, the developers decided to make this an error
+  - If using `NA` as an output, you have to specify `NA` types e.g. `NA_integer_`, `NA_character_`
+  
+  
+  
+## `case_when` "else"
+\footnotesize
+You might wonder how to approximate `else`. 
+
+ - Use `TRUE` as a catch all. 
+
+```{r, eval = FALSE}
+example <- tibble(a = 1:12)
+
+example |>
+  mutate(category = case_when(a %in% c(2, 3, 5, 7, 11) ~ "prime",
+                              sqrt(a) == round(sqrt(a))  ~ "square",
+                              TRUE ~ "other"))
+```
+
+
+## Try it yourself
+\footnotesize
+We will use `midwest` here, which is a dataset built into `tidyverse`.
+
+1. Create a new variable, `poverty_designation`, that is "High Poverty" if `percbelowpoverty` is above 10 and is "Low Poverty" otherwise.
+
+```{r, eval=FALSE, echo = FALSE}
+# answer
+midwest$poverty_designation <- ifelse(midwest$percbelowpoverty > 10, "High Poverty", "Low Poverty") 
+```
+
+2. Create a new variable called `ohio` that is "Ohio Counties" for observations from Ohio and "Other Midwestern Counties" for the rest of the observations.
+
+```{r, eval=FALSE, echo = FALSE}
+# answer
+midwest$ohio <- ifelse(midwest$state == "OH", "Ohio Counties", "Other Midwestern Counties") 
+```
+
+3. Create a new variable called `populous_counties` that is `TRUE` for the observations from the counties listed in `big_counties` and `FALSE` otherwise. \footnotesize
+```{r, eval = FALSE}
+big_counties <- c("COOK", "WAYNE", "CUYAHOGA", "OAKLAND", "FRANKLIN")
+```
+
+```{r, eval=FALSE, echo = FALSE}
+# answer
+big_counties <- c("COOK", "WAYNE", "CUYAHOGA", "OAKLAND", "FRANKLIN")
+midwest$populous_counties <- midwest$county %in% big_counties
+```
+
+4. Create a new variable called `pop_index` that is "High" for the observations with `poptotal` greater than 100000, is "Medium" for the observations with `poptotal` between 30000 and 100000, and "Low" otherwise.
+
+```{r, eval=FALSE, echo = FALSE}
+# answer
+midwest$pop_index <- 
+  ifelse(midwest$poptotal > 100000, "High", 
+    ifelse(midwest$poptotal >= 30000 & midwest$poptotal <= 100000, "Medium", 
+      "Low")
+```
+
+# `if` statements
+
+## `if` statements
+ 
+
+```{r eval=FALSE}
+if (condition is TRUE) {
+  do this
+  ...
+  ...
+  ...
+}
+```
+
+
+
+## `if` statements
+
+For example:
+```{r}
+x <- 100
+
+if (x > 0) {
+  print("x is positive")
+}
+
+```
+
+## `if/else` statements
+
+
+
+```{r eval=FALSE}
+if (condition is TRUE) {
+  do this
+} else {                      
+  do this other thing
+}
+```
+
+## `if/else` statements, example
+
+```{r}
+x <- -5
+if (x > 0) {
+  print("Non-negative number")
+} else {
+  print("Negative number")
+}
+```
+
+
+## `if` and `else` versus `ifelse`
+
+
+`ifelse` 
+
+  - often used in a data setting
+  - handy for quick `yes`, `no` type alternatives
+  - vectorized and accepts `NA`
+  
+`if` and `else` 
+  
+  - often used in a "programming" setting
+  - handle complicated chunks of code and more complex alternatives
+  - `if()` only accepts TRUE or FALSE (not vectorized, no `NA`)
+
+
+## `if`, `else if` and `else` statements
+
+If we have more than 2 conditions, use `if`, `else if` and `else`:
+
+```{r eval=FALSE}
+if (condition is TRUE) {
+  do this
+} else if (second condition is TRUE) {                      
+  do this other thing
+} else if (third condition is TRUE) {
+  do this third thing
+} else {
+  do a default behavior
+}
+```
+
+Note: a default behavior with `else` is not necessary.
+ 
+
+
+## `if`, `else if` and `else` statements, example
+
+\footnotesize
+```{r}
+x <- sample(1:100, 1)
+x
+y <- sample(1:100, 1)
+y
+```
+
+\footnotesize
+```{r}
+if (x > y) {
+  print("x is greater")
+} else if (x < y) {
+  print("y is greater")
+} else {                
+  print("x and y are equal")
+}
+```
+
+## `if`, `else if` and `else` can take a compound condition
+
+```{r}
+x <- sample(1:100, 1)
+x
+y <- sample(1:100, 1)
+y
+z <- sample(1:100, 1)
+z
+```
+
+## `if`, `else if` and `else` can take a compound condition
+
+```{r}
+if (x >= y & x >= z) {
+  print("x is the greatest")
+} else if (y >= z) {
+  print("y is the greatest")
+} else {                
+  print("z is the greatest")
+}
+```
+
+## Try it yourself
+\footnotesize
+Let's develop a small dice game. 
+
+1. Fill in the ... so the code says "You win" if the dice add up to 7 and "You lose" otherwise.
+
+```{r, eval = FALSE}
+dice <- sample(c(1:6), 2)
+    
+if (...) {
+  print("You win")
+} else {
+  print("You lose")
+}
+```
+
+2. Add an `else if()` block to the code above that says "try again" if the dice add up to 6 or 8.
+
+
+## Try it yourself
+\footnotesize
+2. Add an `else if()` block to the code above that says "Try again" if the dice add up to 6 or 8.
+
+```{r, eval = FALSE}
+dice <- sample(c(1:6), 2)
+    
+if (...) {
+  print("You win")
+} else if (...) {
+  print("Try again")
+} else {
+  print("You lose")
+}
+
+```
+
+```{r, eval = FALSE, echo=FALSE}
+# answer
+dice <- sample(c(1:6), 2)
+
+if (sum(dice) == 7) {
+  print("You win")
+} else if(sum(dice) %in% c(6,8)) {
+  print ("Try again")
+} else {
+  print("You lose")
+}
+
+```
+
+
+## Some common uses of `if`
+
+Sharing code among various people. 
+
+- `Sys.getenv("USER")` returns the name of the USER fr
+
+```{r, eval = FALSE}
+
+if (Sys.getenv("USER") == "arianisfeld") {
+  setwd("~/repo/dir")
+} else if (Sys.getenv("USER") == "yunjoo") {
+  setwd("C://repo/dir")
+} else {
+  print(paste0("WARNING: Unknown user. 
+               Working directory is ", getwd()))
+}
+
+```
+
+## `if()` the condition must return TRUE or FALSE
+
+`if()` is not vectorized
+
+```{r, eval = FALSE}
+x <- c(1, -4)
+
+if (x > 0) {
+   x
+} else {
+  -x
+}
+```
+
+`Error in if (x > 0) { : the condition has length > 1`
+
+
+## `if()` the condition must return TRUE or FALSE
+
+
+`if()` does not handle `NA`s
+
+```{r, eval = FALSE}
+x <- NA
+
+if (x > 0) {
+  x
+} else {
+  -x
+}
+```
+
+`Error in if (x > 0) { : missing value where TRUE/FALSE needed`
+
+
+## If you can't afford errors ...
+
+write code to handle edge cases
+
+```{r, eval = TRUE}
+x <- NA
+if (length(x) == 1 & all(!is.na(x) & x > 0)) {
+  x
+} else if (length(x) == 1) {
+  -x
+}
+
+
+x <- c(pi, 2)
+out <- if(length(x) == 1 & all(!is.na(x) & x > 0)) {
+  x
+} else if(length(x) == 1) {
+  -x
+}
+out
+```
+
+## Detour: Why `NULL`? Why not `NA`?
+\footnotesize
+`NULL` stands in for an *object* that is undefined.
+
+```{r}
+length(NULL)
+NULL > 1
+```  
+
+~~~
+
+`NA` stands in for a *value* that is undefined.
+
+```{r}
+length(NA)
+NA > 1
+```  
+
+
+
+## `if()` the condition must return TRUE or FALSE
+\footnotesize
+Good idea to make sure it still works for valid input!
+
+```{r}
+x <- exp(1)
+if (length(x) == 1 & all(!is.na(x) & x > 0)) {
+  x
+} else if (length(x) == 1) {
+  -x
+} 
+
+
+x <- -1000
+if (length(x) == 1 & all(!is.na(x) & x > 0)) {
+  x
+} else if (length(x) == 1) {
+  -x
+} 
+
+```
+
+
+
+
+## Recap
+
+Today we learned how to:
+
+- use control flow with `if` and `ifelse` statements
+- use `ifelse()` and `case_when()` statements in conjunction with `mutate()` or `$<-` to create columns based on conditional statements
+
+## Next up
+
+Lab:
+
+- Today: Practice with `ifelse`
+
+**I can use `ifelse` to create columns conditional on data**
+
+
+Lecture:
+
+- Making data visualizations
+
