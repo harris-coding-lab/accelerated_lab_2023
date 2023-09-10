@@ -1,0 +1,970 @@
+---
+title: 'Accelerated Lecture 8: Iteration and Loops'
+author: "Harris Coding Camp"
+date: "Summer 2022"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../resources/header_page_n.tex
+---
+```{r, setup=TRUE, warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(readxl)
+#options(dplyr.summarise.inform = FALSE)
+#knitr::opts_chunk$set(collapse = TRUE, comment = "#>", highlight = TRUE, fig.align="center")
+```
+
+## Iteration and for-loops
+
+We use for-loops to repeat a task over many different inputs or to repeat a simulation process several times.
+
+- How to write for-loops
+- When to use a for-loop vs vectorized code
+
+```{r}
+for(value in c(1, 2, 3, 4, 5)) {
+  print(value^2)
+}
+```
+
+## Simple for-loop
+
+```{r}
+for (x in c(3, 6, 9)) {
+  print(x)
+}
+```
+
+## Simple for-loop: what is going on?
+
+```{r, eval = FALSE}
+for (x in c(3, 6, 9)) {
+  print(x)
+}
+```
+
+The for-loop is equivalent to the following code. 
+
+```{r, eval = FALSE}
+x <- 3
+print(x)
+x <- 6
+print(x)
+x <- 9
+print(x)
+```
+
+## Simple for-loop: what is going on?
+\footnotesize
+The variable (here `item`) is a **name** that you pick!
+
+```{r, eval = FALSE}
+for (item in c(3, 6, 9)) {
+  print(item)
+}
+```
+
+- it can be `anything`!!
+
+```{r, eval = FALSE}
+for (anything in c(3, 6, 9)) {
+  print(anything)
+}
+```
+
+## General structure of a `for` loop
+
+The general structure of a `for` loop is as follows:
+
+```{r eval=FALSE}
+for (value in list_of_values) {
+  do something (based on value)
+}
+```
+
+Main components: Sequence, Body
+
+## Components of a `for` loop
+
+```{r eval=FALSE}
+for (z in c(5, 4, 3)) { 
+  print(z/2)
+}
+```
+
+1. __Sequence__. Determines what to "loop over"
+    - sequence above is `for (z in c(5, 4, 3))`
+    - this creates a variable `z` 
+    - we assign  `z` to values `c(5, 4, 3)` *iteratively*  
+        - in the first iteration,  `z` is `5`
+        - in the second iteration, `z` is `4`, etc.
+2. __Body__. What to execute as we run through the loop.
+    - Body in above loop is `print(z/2)`
+    - Each iteration, the body prints the value of `z/2`
+
+## The output.
+
+for each value in `c(5,4,3)`, we divide it by 2.
+
+```{r eval=TRUE}
+for (z in c(5, 4, 3)) { 
+  print(z/2)
+}
+```
+
+*Of course, we have an easier way to divide items in a vector by 2*
+
+```{r}
+c(5, 4, 3) / 2
+```
+
+## Components of a `for` loop
+
+
+1. __Sequence__. Determines what to "loop over"
+
+  - often we loop over indices. 
+  - recall, we can refer to items in a vector by their location
+  
+```{r eval=TRUE}
+values <- c(5, 4, 3)
+
+for (i in 1:3) { 
+  print(values[[i]]/2)
+}
+```
+
+
+## When to write a loop or use an iteration method
+
+Grolemund and Wickham: __don't copy and paste more than twice__
+
+- instead consider **a loop or function**
+
+__Broadly, rationale for writing loop__:
+
+- Can make changes to code in one place rather than many
+- Easier to read
+
+
+## When to write a loop vs a functions
+\footnotesize
+Loops are useful when:
+
+  - a similar task is repeated many times in a row
+  - you *cannot use a vectorized option*
+
+Examples: 
+
+    - read in data sets from individual years; each csv only differs by name
+
+Functions are useful when:
+
+  - we anticipate repeating tasks at different points in time
+  - we require flexible and ad-hoc usage of the code
+  - code is complex and naming and encapsulation helps clarify code functionality
+
+
+Often we write functions and then put them in loops or other iterators!
+
+
+## Recipe for how to write loop
+
+The general recipe for writing a loop:
+
+1. Complete the task for one instance outside a loop 
+
+2. a) Decide which part(s) of the __body__ will change with each iteration
+
+2. b) Write the __sequence__  
+
+3. Usually you want to store the output, create an object to store the output outside of the loop
+
+4. Construct the loop
+
+## Example: find sample means
+\footnotesize
+Suppose we want to find the means of increasingly large samples.
+
+```{r}
+mean1 <- mean(rnorm(5))
+mean2 <- mean(rnorm(10))
+mean3 <- mean(rnorm(15))
+mean4 <- mean(rnorm(20))
+mean5 <- mean(rnorm(25000))
+
+means <- c(mean1, mean2, mean3, mean4, mean5)
+means
+```
+
+
+
+## Example: find sample means
+\footnotesize
+Let's avoid repeating code with a `for` loop. 
+
+```{r}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(sample_sizes))
+
+for (i in seq_along(sample_sizes)) {
+  sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+}
+
+sample_means
+```
+
+In the following slides we'll explain each step.
+
+## Finding sample means, broken down 
+
+Assign initial variables **before** starting the for loop. 
+
+```{r eval=FALSE}
+# determine what to loop over
+sample_sizes <- c(5, 10, 15, 20, 25000)
+
+# pre-allocate space to store output
+sample_means <- rep(0, length(sample_sizes))
+```
+
+## why pre-allocate space?
+
+\footnotesize
+
+```{r, eval=FALSE}
+# pre-allocate space to store output
+sample_means <- rep(0, length(sample_sizes))
+
+# inside for-loop
+# same data object every step
+sample_means[[i]] <- next_item
+```
+
+
+ - The alternative is to build up an object as you go (can be very slow)
+ 
+```{r, eval=FALSE}
+# before
+sample_means <- c()
+
+# inside for-loop 
+# new data object every step
+sample_means <- c(sample_means, next_item)
+```
+
+
+
+
+## Reviewing alternative ways to pre-allocate space
+
+Each data type has a comparable function e.g. `logical()`, `integer()`, `character()`.
+
+
+```{r, eval=FALSE}
+# All equivalent
+sample_means <- rep(0.0, 5)
+sample_means <- vector("double", length = 5)
+sample_means <- numeric(5)
+sample_means <- double(5)
+```
+
+
+To hold data of different types, we'll use lists.
+
+```{r, eval=FALSE}
+data_list <- vector("list", length = 5)
+```
+
+## Adding data to a vector, broken down 
+
+Determine what sequence to loop over. 
+
+- we iterate over the indices! 
+- Numbers from 1 to length(sample_sizes)
+
+```{r eval=FALSE}
+for (i in 1:length(sample_sizes)) {
+
+}
+```
+
+## A helper function `seq_along()`
+
+`seq_along(x)` is synonymous to `1:length(x)` 
+
+where `x` is a vector.
+
+**Simple Example**
+```{r}
+vec <- c("x", "y", "z")
+1:length(vec)
+seq_along(vec)
+```
+
+## A helper function `seq_along()`
+
+`seq_along()` protects against that moment when `length(x) = 0`
+
+  - you might worry about this in a function when you don't have control over the input.
+
+```{r}
+seq_along(NULL)
+```
+
+```{r}
+# equivalent to 1:0
+1:length(NULL) 
+```
+
+
+## A helper function `seq_along()`
+
+**Back to Our Example**
+```{r}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+1:length(sample_sizes)
+seq_along(sample_sizes)
+```
+
+## Adding data to a vector, broken down 
+\footnotesize
+Add `for`-loop structure:
+```{r eval=FALSE}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(sample_sizes))
+
+for (i in seq_along(sample_sizes)) {
+
+}
+```
+
+When writing loops, it's very common to create a **sequence** from 1 to the length (i.e., number of elements) of an object. 
+
+- __sequence__: `for (i in seq_along(sample_sizes))`
+  - `i` takes on 1, 2, 3, 4 and 5 *sequentially*
+  - Sequence iterates through the _position number_ or _index_ of each element in `sample_sizes`
+
+## Adding data to a vector, broken down
+\footnotesize
+Add `for`-loop body:
+```{r}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(sample_sizes))
+
+for (i in seq_along(sample_sizes)) {
+  sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+}
+```
+
+__body__: value of `i` refers to the _position number_ or _index_ of the $i^{th}$ element in `sample_sizes`
+
+- Access element contents using `sample_sizes[[i]]`
+- Here, save the output as the $i^{th}$ element in `sample_means`
+
+## Adding data to a vector, broken down
+\footnotesize
+Now `sample_means` has stored the results of iteratively running our code!
+
+```{r}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(sample_sizes))
+
+for (i in seq_along(sample_sizes)) {
+  sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+}
+
+sample_means
+```
+
+## To belabor the point
+\footnotesize
+Our code is equivalent to ...
+
+```{r}
+sample_sizes <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(sample_sizes))
+
+i <- 1
+sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+i <- 2
+sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+i <- 3
+sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+i <- 4
+sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+i <- 5
+sample_means[[i]] <- mean(rnorm(sample_sizes[[i]]))
+
+
+sample_means
+```
+
+
+## You try: Why doesn't this work?
+
+- Run the code
+- Try to fix it.
+
+```{r, eval = FALSE}
+n <- 1:5
+sample_means <- rep(0, length(n))
+
+for (i in seq_along(n)) {
+  mean(rnorm(n[[i]]))
+}
+
+sample_means
+```
+
+## Aside: Common errors
+\footnotesize
+This code falls, why?
+
+- It's not *not* running!
+
+```{r}
+n <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(n))
+
+for (i in seq_along(n)) {
+   print(mean(rnorm(n[[i]])))
+}
+
+sample_means
+```
+
+
+
+## Aside: Common errors
+\footnotesize
+This code falls, why?
+
+- It's running!
+- But we didn't save the output!
+
+```{r}
+n <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(n))
+
+for (i in seq_along(n)) {
+  sample_means[[i]] <- mean(rnorm(n[[i]]))
+}
+
+sample_means
+```
+
+## Aside: Common errors
+\footnotesize
+What's wrong with this code?
+
+```{r}
+n <- c(5, 10, 15, 20, 25000)
+sample_means <- rep(0, length(n))
+
+for (i in seq_along(n)) {
+ sample_means[[i]] <-  mean(rnorm(n[[1]]))
+}
+
+sample_means
+```
+
+
+
+## Aside: Debugging with `cat()`
+\footnotesize
+`cat()` also prints out the output - and can handle variables!
+
+```{r}
+for (i in seq_along(n)) {
+  
+  sample_means[[i]] <- mean(rnorm(n[[i]]))
+  
+  cat("mean of sample", i, "is", sample_means[[i]], 
+      fill = TRUE)
+}
+```
+
+## Aside: Debugging with `cat()`
+\footnotesize
+What does `fill=TRUE` do? 
+```{r}
+for (i in seq_along(n)) {
+  
+  sample_means[[i]] <- mean(rnorm(n[[i]]))
+  cat("mean of sample", i, "is", sample_means[[i]])
+}
+```
+
+## Aside: Debugging with `cat()`
+\footnotesize
+We can explicitly make a new line with "`\n`" or use `fill = TRUE`.
+
+```{r}
+for (i in seq_along(n)) {
+  
+  sample_means[[i]] <- mean(rnorm(n[[i]]))
+  cat("mean of sample", i, "is", sample_means[[i]], "\n")
+}
+```
+## Aside: Debugging with `cat()`
+
+`cat()` prints vectors directly
+
+- i.e. it's not vectorized
+
+```{r}
+names <- c("Sahil", "Kate", "Andrew")
+cat("Our TA", names, "is great!", fill=TRUE)
+
+# paste separates input with " " by default
+# paste0 does no separation.
+print(paste("Our TA", names, "is great!"))
+```
+
+
+
+```{r, eval = FALSE}
+# What about print by itself? 
+# ... throws an ERROR
+print("Our TA", names, "is great!")
+```
+
+## Try it yourself
+
+1. Create a numeric vector that has year of birth of members of your family
+    - you decide who to include
+    - e.g., `birth_years <- c(1944, 1950, 1981, 2016)`
+2. Write a loop that calculates the age of each member of you family.
+3. Print the output in sentences
+    - e.g. The age of family member `i` is...
+    
+*Note: multiple correct ways to complete this task*
+    
+4. Write the same code vectorized.
+
+\medskip
+
+
+```{r, echo=FALSE, eval=FALSE}
+# answer
+birth_years <- c(1944,1950,1981,2016)
+family_members <- numeric(length(birth_years))
+
+for(i in seq_along(family_members)) { # Loop sequence
+  age <- 2022 - birth_years[[i]]        # Loop body
+  cat("The age of family member",i,"is",age, fill=TRUE)
+}
+```
+
+## Review: Vectorized operations
+
+When possible, take advantage of vectorization!
+
+```{r}
+a <- 7:11
+b <- 8:12
+out <- rep(0L, 5)
+
+for (i in seq_along(a)) {
+  out[[i]] <- a[[i]] + b[[i]]
+}
+
+out
+```
+
+This is a bad example of a for loop!
+
+## The better alternative: vectorized addition
+
+```{r}
+a <- 7:11
+b <- 8:12
+out <- a + b
+
+out
+```
+
+Use vectorized operations when you can.
+
+- easier to read code
+- easier to write code (eventually!)
+
+
+
+## What happens when we loop over a tibble?
+\footnotesize
+
+```{r}
+df <- tibble(a = rnorm(4), b = rnorm(4))
+df
+```
+
+```{r}
+for (i in seq_along(df)) {
+  cat("value of object", i, "=", df[[i]], "\n") 
+}
+```
+
+We loop over columns, *not* rows!
+
+- recall tibbles are `list`s and each entry in the list is a column!
+
+
+## It unnatural to loop over *rows* 
+
+We have vectorized functions with mutate  or `$<-`
+
+```{r, eval = FALSE}
+data %>%
+  mutate(new_col = something_vectorized(old_col))
+
+data$new_col <- something_vectorized(old_col1, old_col2)
+```
+
+and `rowwise()` for unvectorized code
+
+```{r, eval = FALSE}
+data %>%
+  rowwise() %>%
+  mutate(new_col = something_unvectorized(old_col))
+```
+
+And, of course, you can pull out a column as a vector and iterate over it.
+
+
+## An example of iterating over columns
+
+Task: calculates z-scores for a set of variables in a data frame
+
+\footnotesize
+First, create sample data
+```{r, warning = FALSE}
+# matrix is like a 2d atomic vector
+set.seed(4)
+df <- as_tibble(matrix(runif(40), ncol = 4))
+names(df) <- c("a", "b", "c", "d")
+head(df)
+```
+
+
+
+## An Example of iterating over columns
+\footnotesize
+The z-score for observation _i_ is the number of standard deviations from mean:
+
+$z_i = \frac{x_i - \bar{x}}{sd(x)}$
+
+Let's calculate z-score for first 4 observations of `df$a`:
+```{r}
+(df$a[1] - mean(df$a, na.rm=TRUE))/sd(df$a, na.rm=TRUE)
+(df$a[2] - mean(df$a, na.rm=TRUE))/sd(df$a, na.rm=TRUE)
+(df$a[3] - mean(df$a, na.rm=TRUE))/sd(df$a, na.rm=TRUE)
+```
+
+## Hmm ... Maybe we need a function!
+
+```{r}
+calc_z_score <- function(x, i, na.rm = TRUE) {
+  (x[i] - mean(x, na.rm = na.rm)) / sd(x, na.rm = na.rm)
+}
+
+calc_z_score(df$a, 1)
+calc_z_score(df$a, 2)
+calc_z_score(df$a, 3)
+```
+
+## Hmm ... Maybe we can get rid of `i` with vectorized code
+
+```{r}
+calc_z_score <- function(x) {
+  (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
+}
+
+calc_z_score(df$a)
+```
+
+
+
+## Example of modifying an object: z-score loop
+\footnotesize
+__Our Task__: write loop that replaces variables with z-scores of those variables
+
+\medskip
+
+- __sequence__ 
+    - data frame `df` has 4 variables and all are quantitative
+    - operate on each column
+        - `for (i in seq_along(df))`
+- __body__
+    - Take z-score function:
+        - `calc_z_score(x)`
+    - Replace `x` with `df[[i]]`: 
+        - `calc_z_score(df[[i]])`
+    - Assign or replace each column: 
+        - overwrite: `df[[i]] <- calc_z_score(df[[i]])`
+        - make new object: `out_df[[i]] <- calc_z_score(df[[i]])`
+
+## Example of modifying an object: z-score loop
+
+Creating an object to capture output is a bit more involved with data frames.
+\footnotesize
+```{r}
+# we can use the old object
+out_df <- df
+
+# OR we can make an empty dataframe
+out_df <- as_tibble(matrix(rep(NA, 40), ncol = ncol(df)))
+names(out_df) <- names(df)
+
+head(out_df)
+```
+
+##  The whole loop
+
+```{r}
+out_df <- as_tibble(matrix(rep(0, 40), ncol = ncol(df)))
+names(out_df) <- names(df)
+
+for (i in seq_along(df)) {
+  # modify values
+  out_df[[i]] <- calc_z_score(df[[i]])
+}
+str(out_df)
+```
+
+
+## Modifying an object in place
+
+We can also change df in place!
+
+- Useful if df is very large (relative to your RAM)
+- Theoretically, can do this in other loops we've seen, but dangerous!
+  - We might change underlying data that we operate on in the next iteration!
+
+\footnotesize
+```{r}
+for (i in seq_along(df)) {
+  # modify values
+  df[[i]] <- calc_z_score(df[[i]])
+}
+str(df)
+```
+
+## map or apply
+
+ Many R coders prefer the `map()` family functions from `purrr` or base R `apply` family. 
+ 
+ - See [iteration](https://r4ds.had.co.nz/iteration.html) in R for Data Science 
+
+```{r, eval = FALSE}
+# map(.x, .f)
+map(df, calc_z_score)
+# sapply(X, FUN, ..., simplify = TRUE)
+sapply(df, calc_z_score, simplify = FALSE)
+```
+
+This says "apply" the function to the columns of the `df` or "map" the columns of `df` to the function `calc_z_score`.
+
+Output is a list -- here, a list of modified columns.
+
+## In action
+\footnotesize
+```{r}
+# map_<output type>(.x, .f)
+map(df, calc_z_score) %>% bind_cols() %>% head(4)
+
+sapply(df, calc_z_score, simplify = FALSE) %>% 
+  bind_cols() %>% head(4)
+```
+
+## `map` makes a list, but we usually want vectors or tibbles.
+
+The `map` family has the form 
+
+- `map_<output type>(.x, .f)`
+
+```{r, eval = FALSE}
+map(.x, .f) %>% as.integer()
+map_int(.x, .f)
+
+map(.x, .f) %>% as.character()
+map_chr(.x, .f)
+```
+```{r}
+# dfc = data.frame columns
+# map(df, calc_z_score) %>% bind_cols()
+map_dfc(df, calc_z_score) %>% head()
+```
+
+## `map` functions can feel like magic
+
+- imagine writing a loop 
+
+  - the sequence is `.x`
+  - the body is `.f` 
+    - often you'll write new functions or even use "anonymous functions".
+    
+```{r}
+sample_means <- map_dbl(c(1, 10, 100, 1000),
+                        function(x) mean(rnorm(x)))
+sample_means
+```
+
+- There's much less overhead. 
+
+
+## `sapply` can feel like magic
+
+- imagine writing a loop 
+
+  - the sequence is `X`
+  - the body is `FUN` 
+    - often you'll write new functions or even use "anonymous functions".
+    
+```{r}
+sample_means <- sapply(c(1, 10, 100, 1000),
+                        function(x) mean(rnorm(x)))
+sample_means
+```
+
+- There's much less overhead. 
+- By default  `simplify = TRUE`, so `sapply` outputs a double vector. 
+  - This "simplification" can make for confusing code since you might be surprised by the output. 
+
+## Key points: iteration
+
+- Iteration is useful when we are repeatedly calling the same block of code or function while changing one (or two) inputs. 
+
+- If you can, use vectorized operations.
+
+- Otherwise, for loops work for iteration
+
+    - Clearly define what you will iterate over (values or indicies)
+    - Pre-allocate space for your output
+    - The body of the for-loop has parametrized code based on thing your iterating over
+    - Debug as you code by testing your understanding of what the for-loop should be doing (e.g. using `cat()` or `print()`)
+    
+
+## Next steps
+
+Lab:
+
+- *Today:* Learning Loops
+
+**I can write loops, but know when to vectorize**
+
+- *Tomorrow:* Joining data sets, Base R plots, Review / Final Project
+- *Friday:*  Pivoting, Review / Final Project
+
+Final project:
+
+- Deadline for guaranteed feedback September 24. 
+  - Recommend setting a personal deadline of the 21st.
+  - Optional but worth trying!  
+  
+# Thank you!
+
+
+
+
+# Additional Material
+
+## Creating multiple plots with a loop
+\footnotesize
+Another good use of a loop is to create multiple graphs easily. Let’s use a loop to create 4 plots representing data from an exam containing 4 questions. Here are how the first few rows of the data look:
+
+```{r echo=FALSE}
+examscores <- tibble(a = rnorm(100,60,20), 
+                     b = rnorm(100,50,25), 
+                     c = rnorm(100,70,15),
+                     d = rnorm(100,75,10))
+```
+
+```{r}
+head(examscores)
+```
+
+## Creating multiple plots with a loop
+\footnotesize
+
+Let's loop over the columns and create a histogram of the data in each column:
+```{r, eval=FALSE}
+# Set up a 2 x 2 plotting space
+par(mfrow = c(2, 2))  
+
+# Create the loop.vector (sequence)
+each.question <- 1:4
+
+for (i in each.question) { 
+  
+  # Plot histogram of each question
+  hist(examscores[[i]],
+       main = paste("Question", i),
+       xlab = "Scores",
+       xlim = c(0, 100))
+}
+```
+
+## Creating multiple plots with a loop
+
+```{r, echo=FALSE}
+# Set up a 2 x 2 plotting space
+par(mfrow = c(2, 2))  
+
+# Create the loop.vector (sequence)
+each.question <- 1:4
+
+for (i in each.question) { 
+  
+  # Plot histogram of each question
+  hist(examscores[[i]],
+       main = paste("Question", i),
+       xlab = "Scores",
+       xlim = c(0, 100))
+}
+```
+
+## Try it yourself
+\footnotesize
+We’ll use `midwest` data and use a loop to create 4 plots representing data from `midwest` containing 4 key columns: `poptotal`, `percpovertyknown`, `percollege` and `percbelowpoverty`. Loop over these selected columns and create a histogram of the data in each column by completing the following code.
+
+```{r, eval=FALSE}
+# Set up a 2 x 2 plotting space
+par(mfrow = c(2, 2))  
+
+# Create the sequence
+selected.column <- c("poptotal", "percpovertyknown", 
+                     "percollege", "percbelowpoverty")
+
+for (...) { 
+  
+  # Plot histogram of each column
+  hist(...,
+       main = paste(...),
+       xlab = ...)
+}
+```
+
+## Try it yourself
+
+You should get the histograms below:
+
+\medskip 
+
+```{r, echo=FALSE}
+# answer
+# Set up a 2 x 2 plotting space
+par(mfrow = c(2, 2))  
+
+# Create the sequence
+selected.column <- c("poptotal", "percpovertyknown", "percollege", "percbelowpoverty")
+
+for (i in selected.column) { 
+  
+  # Plot histogram of each question
+  hist(midwest[[i]],
+       main = paste("Histogram of", i),
+       xlab = i)
+}
+```
