@@ -38,7 +38,7 @@ for (i in ...) {
 
 ## I. Writing for-loops
 
-1. Write a for-loop that iterates over the indices of `x` and prints the `i`th value of `x`.   
+1. Write a for-loop that iterates over the indices of `x` and prints the `i`th value of `x`.^[This is a good time for `seq_along()`!]   
 
     ```{r, eval = FALSE}
     x <- c(5, 10, 15, 20, 25000)
@@ -90,7 +90,7 @@ names <- c("Alysha", "Fanmei", "Paola")
 out <- paste0("Welcome ", names)
 ```
 
-The vectorized code is preferred because it is easier to write and read, and is possibly more efficient.
+The vectorized code is preferred because it is easier to write and read, and automatically does pre-allocation for you.
 
 1. Rewrite this for-loop as vectorized code:
     
@@ -136,7 +136,7 @@ for (v in visitors) {
 }
 ```
 
-4. a. Vectorize this code.
+4. a. Vectorize this code. Install the package "tictoc".
 
 ```{r, eval = TRUE, cache=TRUE}
 big <- c()
@@ -189,10 +189,6 @@ We'll start by making a vector of sample sizes from 1 to 50, to represent increa
 
 1. Create a vector called `sample_sizes` that is made up of the numbers 1 through 50.
 
-```{r vector}
-
-```
-
 We'll make an empty tibble to store the results of the for loop:
 
 ```{r estimates}
@@ -203,7 +199,7 @@ estimates <- tibble(n = integer(), sample_mean = double())
 
   a. Calculate the mean of a sample from the random normal distribution with mean = 0 and sd = 5.
   b. Make an intermediate tibble to store the results
-  c. Append the intermediate tibble to your tibble using bind_rows().
+  c. Append the intermediate tibble to your tibble using `bind_rows()`.
 
 ```{r loop, eval = FALSE}
 set.seed(60637)
@@ -218,32 +214,27 @@ for (___ in ___) {
 }
 ```
 
-3. We can use `ggplot` to view the results. Fill in the correct information for the data and x and y variables, so that the `n` column of the `estimates` tibble is plotted on the x-axis, while the `sample_mean` column of the `estimates` tibble is plotted on the y-axis.
+3. We can use `ggplot` to view the results.
 
 ```{r ggplot, eval=FALSE}
-# your data goes in the first position
-___ %>% 
-  ggplot(aes(x = ___, y = ___)) + 
+estimates |> 
+  ggplot(aes(x = n, y = sample_mean)) + 
   geom_line()
 ```
 
 4. As the sample size (`n`) increases, does the sample mean becomes closer to 0, or farther away from 0?
 
-Rewrite the loop code without looking at your previous code and use a wider range of sample sizes. Try several different sample size combinations. What happens when you increase the sample size to 100? 500? 1000? Use the `seq()` function to generate a sensibly spaced sequence. How does this compare to before?
+Rewrite the loop code *without looking at your previous code* and use a wider range of sample sizes. Try several different sample size combinations. What happens when you increase the sample size to 100? 500? 1000? Use the `seq()` function to generate a sensibly spaced sequence. How does this compare to before?
 
 ```{r sampsizes, eval=FALSE}
 set.seed(60637)
-sample_sizes <- ___
-estimates_larger_n <- ___
 
-for (___ in ___) {
-  ___ <- ___
-  ___ <- ___
-  ___ <- ___
-}
+# Write your loop
+...
 
-___ %>%
-  ggplot(___(___ = ___, ___ = ___)) +
+# Then take the output and see the plot
+... |>
+  ggplot(...) +
   geom_line()
 ```
 
@@ -251,20 +242,22 @@ ___ %>%
 
 Do the following:
 
-a. Create a vector called `population_sd` of length 4 with values 1, 5, 10, and 20 (you're welcome to add larger numbers if you wish).
+a. Create a vector called `population_sd` of length 4 with values 1, 5, 10, and 20 
 b. Make an empty tibble to store the output. Compared to before, this has an extra column for the changing population standard deviations.
 c. Write a loop inside a loop over `population_sd` and then `sample_sizes`.
 d. Then, make a `ggplot` graph where the x and y axes are the same, but we facet (aka we create small multiples of individual graphs) on `population_sd`.
 
 ```{r loopinloop, eval=FALSE}
 set.seed(60637)
-population_sd <- ___
-# use what every you came up with in the previous part
-sample_sizes <- ___ 
-estimates_adjust_sd <- ___
 
-for (___ in ___){
-  for (___ in ___) {
+population_sd <- c(1, 5, 10, 20)
+estimates <- tibble(n = integer(), pop_sd = double(), sample_mean = double(), )
+
+for (___ in population_sd){
+  # For each population standard deviation in the outer loop
+  # We run the code with each sample size in the inner loop!
+  for (___ in sample_sizes) {
+    
     ___ <- ___
     ___ <- ___
     ___ <- ___
@@ -274,11 +267,11 @@ for (___ in ___){
 ___ %>%
   ggplot(___) +
   geom_line() +
-  facet_wrap(~population_sd) +
+  facet_wrap(vars(population_sd)) +
   theme_minimal()
 ```
 
-How do these estimates differ as you increase the standard deviation?
+How do these estimates differ as you increase the standard deviation? Try running the code with different values in `population_sd`.
 
 6. At this point in your coding career, efficiency is minimally important. However, we discussed that loops in R are much slower if we build our output item by item (or row by row in this case). We do better if we pre-allocate space.
 
