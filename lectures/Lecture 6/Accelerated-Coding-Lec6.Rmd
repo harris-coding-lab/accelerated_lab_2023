@@ -117,8 +117,7 @@ wid_data |>
 
 - summarize by group with `group_by()` + `summarize()` 
 - create new columns with `group_by()` + `mutate()` 
-- `filter()` data with group specific matching criteria
-
+- Appendix: `filter()` data with group specific matching criteria
 
 
 
@@ -538,50 +537,6 @@ ranked_data |>
   head()
 ```
 
-## **split-apply-combine** `filter`:
-
-- we don't need sales_rank to filter by ranks!
-
-```{r}
-txhousing |>
-  group_by(year, city) |>
-  summarize(total_sales = sum(sales, na.rm = TRUE)) |>
-  group_by(year) |>
-  # we don't need sales_rank to filter by ranks!
-  filter(rank(desc(total_sales)) <=  5) |>
-  arrange(year, desc(total_sales)) |>
-  head()
-```
-
-## Grouped `arrange`?
-
-`arrange()` doesn't work on groups by default.
-
-- has default argument `.by_group = FALSE`
-
-```{r}
-ex_data |>
-  group_by(group_col) |>
-  arrange(x)
-```
-
-## Aside: Grouped `arrange`
-
-Set `.by_group = TRUE` 
-
-```{r}
-ex_data |>
-  group_by(group_col) |>
-  # this option is nice if you have many grouping cols
-  arrange(x, .by_group = TRUE)
-```
-
-Same idea as ...
-
-```{r, eval = FALSE}
-ex_data |>
-  arrange(group_col, x)
-```
 
 # Wrapping up commonly used chunks of code
 
@@ -719,7 +674,6 @@ We learned the concept **split-apply-combine** and how to use it in tidyverse!
 - created new columns with `group_by()` + `mutate()` 
   - we saw `lag()` and `rank()`, but you could get 
     also add group-level stats like `mean()` and `median()`
-- `filter()` data with group specific matching criteria
 - use `count()` and `add_count()` as short cuts for getting group level counts
 
 ## Next steps:
@@ -735,3 +689,49 @@ Lecture:
 - Tomorrow: Writing your own functions!
 
 
+## Appendix
+
+## **split-apply-combine** `filter`:
+
+- we don't need sales_rank to filter by ranks!
+
+```{r}
+txhousing |>
+  group_by(year, city) |>
+  summarize(total_sales = sum(sales, na.rm = TRUE)) |>
+  group_by(year) |>
+  # we don't need sales_rank to filter by ranks!
+  filter(rank(desc(total_sales)) <=  5) |>
+  arrange(year, desc(total_sales)) |>
+  head()
+```
+
+## Grouped `arrange`?
+
+`arrange()` doesn't work on groups by default.
+
+- has default argument `.by_group = FALSE`
+
+```{r}
+ex_data |>
+  group_by(group_col) |>
+  arrange(x)
+```
+
+## Aside: Grouped `arrange`
+
+Set `.by_group = TRUE` 
+
+```{r}
+ex_data |>
+  group_by(group_col) |>
+  # this option is nice if you have many grouping cols
+  arrange(x, .by_group = TRUE)
+```
+
+Same idea as ...
+
+```{r, eval = FALSE}
+ex_data |>
+  arrange(group_col, x)
+```
