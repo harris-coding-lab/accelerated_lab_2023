@@ -1,6 +1,13 @@
-# Harris Math & Coding Camp (2023)
+# Harris Math & Coding Camp (2023): Coding in R
 
 Harris Math & Coding Camp is a three-week review course designed to ensure that incoming Master’s students are proficient in the mathematical and coding concepts needed to successfully navigate the Core Curriculum. The topics and contents are identical for both Standard and Accelerated tracks; the only difference is pacing – Standard meets every day (13 lectures) while Accelerated moves faster (8 lectures). See more details on pages 3-4.
+
+
+## A note to students
+
+We learn to code because it is an integral toolkit for data analysis and statistics, which are in turn fundamental to evidence-based policy. Coding camp should provide you a baseline of R skills, but will not make you an expert. Your core coursework will still be challenging as the statistics professors push you to apply R beyond the level we cover here.
+
+The accelerated course is aimed at students with previous coursework in computer science or data analytics or who have completed a fair amount of self-study.
 
 
 ## Topics/Modules
