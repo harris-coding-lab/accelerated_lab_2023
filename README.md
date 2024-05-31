@@ -20,7 +20,7 @@ The accelerated course is aimed at students with previous coursework in computer
 **Vectors, Lists and Data Frames**
 - [slides](./lectures/Lecture%202/Accelerated_Coding_Lec2.pdf)
 - [lab](./labs/Lab%203/Accelerated-Lab-3.pdf)
-- 
+
 **Data Manipulation and Analysis - Tidyverse**
 - [slides](./lectures/Lecture%203/Accelerated_Coding_Lec3.pdf)
 - [lab](./labs/Lab%205/Accelerated-Lab-5.pdf)
